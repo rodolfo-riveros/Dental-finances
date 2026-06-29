@@ -521,20 +521,20 @@ const gastosPct = currentData.gastos > 0 ? (currentData.gastos / (currentData.ga
 
   const tourStyles = document.createElement('style');
   tourStyles.textContent = `
-    .driver-popover { background: var(--c-glass,#1E293B); backdrop-filter: blur(20px); border: 1px solid var(--c-glass-border,rgba(255,255,255,0.08)); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 20px 22px; min-width: 280px; max-width: 340px; color: var(--c-text,#F1F5F9); }
+    .driver-popover { background: var(--c-glass); backdrop-filter: blur(20px); border: 1px solid var(--c-glass-border); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 20px 22px; min-width: 280px; max-width: 340px; color: var(--c-text); }
     .driver-popover * { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
-    .driver-popover-title { font-size: 1rem; font-weight: 700; color: #F1F5F9; line-height: 1.4; padding-right: 28px; }
-    .driver-popover-description { font-size: 0.82rem; color: #94A3B8; line-height: 1.55; margin-top: 6px; }
-    .driver-popover-description strong { color: var(--c-primary-light,#2DD4BF); font-weight: 600; }
-    .driver-popover-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
-    .driver-popover-progress-text { font-size: 0.7rem; color: #64748B; font-weight: 500; }
-    .driver-popover-footer-btn { background: var(--c-primary,#0D9488); color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
-    .driver-popover-footer-btn:hover { background: var(--c-primary-dark,#0F766E); }
-    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child { background: rgba(255,255,255,0.08); color: #CBD5E1; }
-    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child:hover { background: rgba(255,255,255,0.12); }
-    .driver-popover-close-btn { color: #64748B; top: 4px; right: 6px; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-    .driver-popover-close-btn:hover { color: #F1F5F9; background: rgba(255,255,255,0.06); }
-    .driver-popover-arrow { border-color: var(--c-glass,#1E293B); }
+    .driver-popover-title { font-size: 1rem; font-weight: 700; color: var(--c-text); line-height: 1.4; padding-right: 28px; }
+    .driver-popover-description { font-size: 0.82rem; color: var(--c-text-light); line-height: 1.55; margin-top: 6px; }
+    .driver-popover-description strong { color: var(--c-primary); font-weight: 600; }
+    .driver-popover-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--c-glass-border); }
+    .driver-popover-progress-text { font-size: 0.7rem; color: var(--c-text-light); font-weight: 500; }
+    .driver-popover-footer-btn { background: var(--c-primary); color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+    .driver-popover-footer-btn:hover { filter: brightness(1.15); }
+    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child { background: var(--c-glass); color: var(--c-text-secondary); border: 1px solid var(--c-glass-border); }
+    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child:hover { background: var(--c-glass-border); }
+    .driver-popover-close-btn { color: var(--c-text-light); top: 4px; right: 6px; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .driver-popover-close-btn:hover { color: var(--c-text); background: var(--c-glass); }
+    .driver-popover-arrow { border-color: var(--c-glass); }
   `;
   document.head.appendChild(tourStyles);
 
