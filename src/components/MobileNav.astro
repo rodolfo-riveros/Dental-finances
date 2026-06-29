@@ -1,0 +1,418 @@
+---
+import Icon from '../components/Icon.astro';
+
+interface Props {
+  links?: { href: string; label: string; icon: string }[];
+}
+
+const defaultLinks = [
+  { href: '/dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+  { href: '/gastos', label: 'Gastos', icon: 'receipt' },
+  { href: '/tratamiento', label: 'Tratamiento', icon: 'clipboard-list' },
+  { href: '/deudas', label: 'Deudas', icon: 'credit-card' },
+  { href: '/ajustes', label: 'Ajustes', icon: 'settings' },
+];
+
+const { links = defaultLinks } = Astro.props;
+const uid = `mnav-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<button class="mobile-menu-btn" id={`${uid}-btn`} aria-label="Abrir menú">
+  <Icon name="menu" size={22} />
+</button>
+
+<div class="mobile-overlay" id={`${uid}-overlay`}>
+  <div class="mobile-menu-panel" id={`${uid}-panel`}>
+    <div class="mobile-menu-header">
+      <span class="mobile-brand">DentFinance</span>
+      <button class="mobile-menu-btn close-btn" id={`${uid}-close`} aria-label="Cerrar menú">
+        <Icon name="x" size={22} />
+      </button>
+    </div>
+
+    <div class="mobile-menu-links">
+      {links.map((link) => (
+        <a href={link.href} class="mobile-link">
+          <Icon name={link.icon} size={20} />
+          <span>{link.label}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="mobile-menu-footer">
+      <div class="mobile-user">
+        <div class="mobile-avatar" id="mobileAvatar" style="position:relative">DF<span class="avatar-notif-mobile hidden" id="mobileNotifDot"></span></div>
+        <div>
+          <div class="mobile-user-name" id="mobileName">Admin</div>
+          <div class="mobile-user-role" id="mobileRole">Clinica Dental</div>
+        </div>
+      </div>
+      <div class="mobile-actions">
+        <button class="mobile-action" id="mobileNotifToggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+          <span class="mobile-notif-badge hidden" id="mobileNotifBadge">0</span>
+        </button>
+        <button class="mobile-action" id="mobileThemeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="mobile-theme-sun"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="mobile-theme-moon"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
+        </button>
+        <button class="mobile-action" id="mobileEditProfile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+        </button>
+        <button class="mobile-action mobile-logout" id="mobileLogout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-notif-panel hidden" id="mobileNotifPanel">
+      <div class="mobile-notif-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+        <span>Notificaciones</span>
+        <span class="mobile-notif-dot hidden" id="mobileNotifDotHeader"></span>
+      </div>
+      <div class="mobile-notif-list" id="mobileNotifList">
+        <div class="mobile-notif-empty">Sin notificaciones</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ uid }}>
+  (function() {
+    const btn = document.getElementById(uid + '-btn');
+    const overlay = document.getElementById(uid + '-overlay');
+    const panel = document.getElementById(uid + '-panel');
+    const closeBtn = document.getElementById(uid + '-close');
+    const links = overlay.querySelectorAll('.mobile-link');
+
+    function open() {
+      overlay.classList.add('open');
+      panel.classList.add('open');
+      btn.classList.add('hidden');
+    }
+
+    function close() {
+      overlay.classList.remove('open');
+      panel.classList.remove('open');
+      btn.classList.remove('hidden');
+    }
+
+    btn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+    links.forEach(l => l.addEventListener('click', close));
+
+    // Profile data
+    const name = localStorage.getItem('df_name');
+    const clinic = localStorage.getItem('df_clinic');
+    if (name) {
+      document.getElementById('mobileName').textContent = name;
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      document.getElementById('mobileAvatar').textContent = initials;
+    }
+    if (clinic) {
+      document.getElementById('mobileRole').textContent = clinic;
+    }
+
+    // Active link
+    const path = window.location.pathname;
+    links.forEach(l => {
+      if (l.getAttribute('href') === path) {
+        l.classList.add('active');
+      }
+    });
+
+    // --- Mobile actions ---
+    // Theme toggle
+    function updateMobileThemeUI(t) {
+      const sun = document.querySelector('.mobile-theme-sun');
+      const moon = document.querySelector('.mobile-theme-moon');
+      if (sun) sun.style.display = t === 'dark' ? 'none' : 'block';
+      if (moon) moon.style.display = t === 'dark' ? 'block' : 'none';
+    }
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updateMobileThemeUI(currentTheme);
+
+    document.getElementById('mobileThemeBtn').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('df_theme', next);
+      updateMobileThemeUI(next);
+      // Update the desktop theme label too if it exists
+      const label = document.getElementById('dropdownThemeLabel');
+      if (label) label.textContent = next === 'dark' ? 'Modo Claro' : 'Modo Oscuro';
+    });
+
+    // Edit profile - dispatch event for Layout to catch
+    document.getElementById('mobileEditProfile').addEventListener('click', () => {
+      const profileModal = document.getElementById('profileModal');
+      if (profileModal) {
+        profileModal.classList.add('open');
+        // Load profile fields
+        const name = localStorage.getItem('df_name') || 'Admin';
+        const email = localStorage.getItem('df_email') || 'admin@dental.com';
+        const clinic = localStorage.getItem('df_clinic') || 'Clinica Dental';
+        const fn = document.getElementById('profileFieldName');
+        const fe = document.getElementById('profileFieldEmail');
+        const fc = document.getElementById('profileFieldClinic');
+        if (fn) fn.value = name;
+        if (fe) fe.value = email;
+        if (fc) fc.value = clinic;
+      }
+      close();
+    });
+
+    // Logout
+    document.getElementById('mobileLogout').addEventListener('click', () => {
+      localStorage.removeItem('df_logged');
+      localStorage.removeItem('df_name');
+      localStorage.removeItem('df_email');
+      window.location.href = '/';
+    });
+
+    // --- Notifications in mobile ---
+    const notifBtn = document.getElementById('mobileNotifToggle');
+    const notifPanel = document.getElementById('mobileNotifPanel');
+    const notifList = document.getElementById('mobileNotifList');
+    const notifDot = document.getElementById('mobileNotifDot');
+    const notifDotHeader = document.getElementById('mobileNotifDotHeader');
+    const notifBadge = document.getElementById('mobileNotifBadge');
+
+    notifBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notifPanel.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.mobile-notif-panel') && !e.target.closest('#mobileNotifToggle')) {
+        notifPanel.classList.add('hidden');
+      }
+    });
+
+    async function loadMobileNotifs() {
+      try {
+        const { fetchDebts } = await import('../lib/data');
+        const docs = await fetchDebts();
+        const overdue = docs.filter(d => {
+          if (d.status === 'Pagado' || d.status === 'Cancelled') return false;
+          if (!d.dueDate) return false;
+          const parts = d.dueDate.split('-');
+          if (parts.length !== 3) return false;
+          const y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, da = parseInt(parts[2]);
+          if (isNaN(y) || isNaN(m) || isNaN(da)) return false;
+          const today = new Date(); today.setHours(0,0,0,0);
+          return new Date(y, m, da) < today;
+        });
+        const has = overdue.length > 0;
+        notifDot.classList.toggle('hidden', !has);
+        notifDotHeader.classList.toggle('hidden', !has);
+        notifBadge.classList.toggle('hidden', !has);
+        if (has) notifBadge.textContent = overdue.length;
+        if (!has) {
+          notifList.innerHTML = '<div class="mobile-notif-empty">Sin notificaciones</div>';
+          return;
+        }
+        notifList.innerHTML = overdue.slice(0, 5).map(d => {
+          const amt = Number(d.amount) || 0;
+          const p = d.patient || '—';
+          const desc = d.description || '';
+          return `<div class="mobile-notif-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg><div class="mobile-notif-item-info"><span class="mobile-notif-item-name">${p}</span><span class="mobile-notif-item-detail">${desc}</span></div><span class="mobile-notif-item-amount">S/ ${amt.toLocaleString('es-PE')}</span></div>`;
+        }).join('');
+        if (overdue.length > 5) {
+          const more = document.createElement('div');
+          more.className = 'mobile-notif-item';
+          more.style.justifyContent = 'center';
+          more.style.color = 'var(--c-text-light)';
+          more.style.fontSize = '0.68rem';
+          more.style.cursor = 'pointer';
+          more.textContent = `+ ${overdue.length - 5} más`;
+          more.onclick = () => { window.location.href = '/deudas'; };
+          notifList.appendChild(more);
+        }
+      } catch (err) {
+        console.warn('Error loading mobile notifs:', err);
+      }
+    }
+    loadMobileNotifs();
+    setInterval(loadMobileNotifs, 300000);
+  })();
+</script>
+
+<style>
+  .mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 200;
+    width: 42px;
+    height: 42px;
+    background: var(--c-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--c-glass-border);
+    border-radius: var(--radius-md);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    font-family: var(--font-sans);
+  }
+  .mobile-menu-btn svg { width: 22px; height: 22px; color: var(--c-text); }
+  .mobile-menu-btn.hidden { display: none; }
+
+  .mnav-line { transition: d 0.3s; }
+
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0px);
+    z-index: 100;
+    display: flex;
+    justify-content: flex-end;
+    pointer-events: none;
+    transition: background 0.3s, backdrop-filter 0.3s;
+  }
+  .mobile-overlay.open {
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+  }
+
+  .mobile-menu-panel {
+    width: 300px;
+    max-width: 85vw;
+    background: var(--c-sidebar-bg, linear-gradient(180deg, #0C1222 0%, #111827 100%));
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.3);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .mobile-menu-panel.open { transform: translateX(0); }
+
+  .mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .mobile-brand { font-size: 1.1rem; font-weight: 700; color: #F1F5F9; }
+
+  .close-btn { position: static; display: flex; }
+
+  .mobile-menu-links {
+    flex: 1;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mobile-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    color: rgba(148, 163, 184, 0.8);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  .mobile-link svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .mobile-link:hover { background: rgba(255,255,255,0.06); color: #E2E8F0; }
+  .mobile-link.active { background: rgba(13,148,136,0.12); color: var(--c-primary-light); }
+
+  .mobile-menu-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .mobile-user { display: flex; align-items: center; gap: 0.75rem; }
+  .mobile-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-light));
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.75rem;
+    box-shadow: 0 2px 8px rgba(13,148,136,0.25);
+  }
+  .mobile-user-name { font-weight: 600; font-size: 0.85rem; color: #E2E8F0; }
+  .mobile-user-role { font-size: 0.75rem; color: rgba(148, 163, 184, 0.7); }
+
+  /* Mobile actions row */
+  .mobile-actions {
+    display: flex; align-items: center; gap: 0.35rem;
+    margin-top: 0.65rem; padding-top: 0.65rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    justify-content: space-around;
+  }
+  .mobile-action {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: none; background: rgba(255,255,255,0.05);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: rgba(148,163,184,0.7); transition: all 0.15s;
+    position: relative;
+  }
+  .mobile-action:hover { background: rgba(255,255,255,0.1); color: #E2E8F0; }
+  .mobile-action.mobile-logout:hover { background: rgba(239,68,68,0.15); color: #FCA5A5; }
+  .mobile-notif-badge {
+    position: absolute; top: -3px; right: -3px;
+    min-width: 16px; height: 16px; border-radius: 8px;
+    background: #DC2626; color: white; font-size: 0.55rem;
+    font-weight: 700; display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+  }
+  .mobile-notif-badge.hidden { display: none; }
+
+  .mobile-theme-sun, .mobile-theme-moon { width: 16px; height: 16px; }
+  .mobile-theme-moon { display: none; }
+
+  /* Avatar notif dot */
+  .avatar-notif-mobile {
+    position: absolute; bottom: -1px; right: -1px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #DC2626; border: 2px solid #0C1222;
+  }
+  .avatar-notif-mobile.hidden { display: none; }
+
+  /* Notification panel inside mobile menu */
+  .mobile-notif-panel {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 0.5rem 1rem;
+    background: rgba(0,0,0,0.15);
+  }
+  .mobile-notif-panel.hidden { display: none; }
+  .mobile-notif-header {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.68rem; font-weight: 600; color: rgba(148,163,184,0.8);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+  }
+  .mobile-notif-header svg { opacity: 0.5; }
+  .mobile-notif-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #DC2626;
+    margin-left: auto;
+  }
+  .mobile-notif-dot.hidden { display: none; }
+  .mobile-notif-list { display: flex; flex-direction: column; gap: 0.1rem; max-height: 160px; overflow-y: auto; }
+  .mobile-notif-item {
+    display: flex; align-items: center; gap: 0.45rem;
+    padding: 0.3rem 0.5rem; border-radius: 6px;
+    font-size: 0.7rem; color: #E2E8F0; cursor: default;
+  }
+  .mobile-notif-item:hover { background: rgba(255,255,255,0.04); }
+  .mobile-notif-item svg { width: 12px; height: 12px; color: #DC2626; flex-shrink: 0; }
+  .mobile-notif-item-info { flex: 1; min-width: 0; }
+  .mobile-notif-item-name { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mobile-notif-item-detail { font-size: 0.6rem; color: rgba(148,163,184,0.7); display: block; }
+  .mobile-notif-item-amount { font-size: 0.65rem; color: #FCA5A5; flex-shrink: 0; font-weight: 600; }
+  .mobile-notif-empty { font-size: 0.68rem; color: rgba(148,163,184,0.5); padding: 0.25rem 0.5rem; }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn { display: flex; }
+  }
+</style>

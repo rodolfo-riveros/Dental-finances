@@ -1,0 +1,1322 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const today = new Date();
+const currentMonth = today.getMonth();
+---
+
+<Layout title="Deudas - DentFinance">
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Estado de Deudas</h1>
+        <p class="page-subtitle">Control de cuentas por cobrar separado por origen</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-label">Pendiente</span>
+          <span class="stat-chip-value" id="statPending" style="color: var(--c-danger)">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Cobrado</span>
+          <span class="stat-chip-value" id="statPaid" style="color: var(--c-success)">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Deudas</span>
+          <span class="stat-chip-value" id="statCount">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- Form -->
+      <div class="glass-card form-section">
+        <div class="section-head">
+          <div class="section-head-icon">
+            <Icon name="plus" size={20} />
+          </div>
+          <div>
+            <h2 class="section-title" id="formTitle">Nueva Deuda</h2>
+            <p class="section-desc" id="formDesc">Registra una nueva deuda</p>
+          </div>
+        </div>
+
+        <form id="debt-form" class="debt-form" novalidate>
+          <div class="form-group">
+            <label class="form-label">Origen</label>
+            <div class="radio-row">
+              <label class="radio-card">
+                <input type="radio" name="source" value="Clínica" checked />
+                <span class="radio-content">
+                  <Icon name="building" size={22} />
+                  <span class="radio-title">Clínica</span>
+                </span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="source" value="Externo" />
+                <span class="radio-content">
+                  <Icon name="map-pin" size={22} />
+                  <span class="radio-title">Fuera de Local</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="debt-patient" class="form-label">Paciente / Deudor</label>
+            <div class="input-wrap">
+              <span class="input-icon"><Icon name="user" size={16} /></span>
+              <input type="text" id="debt-patient" name="patient" placeholder="Nombre del paciente" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="debt-desc" class="form-label">Descripción</label>
+            <div class="input-wrap">
+              <span class="input-icon"><Icon name="file-text" size={16} /></span>
+              <input type="text" id="debt-desc" name="description" placeholder="Concepto de la deuda" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="debt-amount" class="form-label">Monto (S/)</label>
+              <div class="input-wrap">
+                <span class="input-icon"><Icon name="dollar-sign" size={16} /></span>
+                <input type="number" id="debt-amount" name="amount" placeholder="0.00" step="0.01" min="0" class="form-input" required />
+              </div>
+            </div>
+            <div class="form-group flex-1">
+              <label for="debt-due" class="form-label">Fecha de Vencimiento</label>
+              <div class="input-wrap">
+                <span class="input-icon"><Icon name="calendar" size={16} /></span>
+                <input type="date" id="debt-due" name="dueDate" class="form-input" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-divider" />
+
+          <div class="form-group">
+            <label class="form-label">Comprobante (opcional)</label>
+            <div class="voucher-upload" id="voucher-area">
+              <input type="file" id="debt-voucher" name="voucher" accept="image/*,.pdf" capture="environment" class="voucher-input" />
+              <div class="voucher-content" id="debtVoucherContent">
+                <div class="voucher-icon-wrap">
+                  <Icon name="camera" class="voucher-icon" size={24} />
+                </div>
+                <span class="voucher-text">Subir Comprobante</span>
+                <span class="voucher-subtext">Toca para abrir cámara o galería — JPG, PNG, PDF</span>
+              </div>
+              <img id="debt-voucher-preview" class="voucher-preview" alt="Vista previa" />
+              <button type="button" class="voucher-clear hidden" id="debtVoucherClear">
+                <Icon name="trash-2" size={14} />
+                Eliminar comprobante
+              </button>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-save" id="debtSubmitBtn">
+              <Icon name="plus" size={18} />
+              Guardar Deuda
+            </button>
+            <button type="button" class="btn-cancel hidden" id="debtCancelBtn">
+              <Icon name="x" size={18} />
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Debt sections -->
+      <div class="debt-sections">
+        <!-- Clinica Section -->
+        <div class="glass-card">
+          <div class="section-head">
+            <div class="section-head-icon" style="background: rgba(13,148,136,0.1); color: #0D9488;">
+              <Icon name="building" size={18} />
+            </div>
+            <div class="section-head-text">
+              <h2 class="section-title">Clínica</h2>
+              <p class="section-desc" id="descClinica">0 registros</p>
+            </div>
+            <select class="month-filter" data-section="clinica">
+              <option value="-1">Mostrar hoy</option>
+              {months.map((m, i) => <option value={i} selected={i === currentMonth}>{m}</option>)}
+              <option value="99">Ver todos</option>
+            </select>
+            <button class="pdf-btn" data-section="clinica" title="Exportar PDF">
+              <Icon name="file-text" size={16} />
+              PDF
+            </button>
+          </div>
+          <div class="debt-list" id="listClinica"></div>
+          <div class="debt-empty hidden" id="emptyClinica">
+            <Icon name="credit-card" size={24} />
+            <span>No hay deudas de Clínica</span>
+          </div>
+        </div>
+
+        <!-- Externo Section -->
+        <div class="glass-card">
+          <div class="section-head">
+            <div class="section-head-icon" style="background: rgba(16,185,129,0.1); color: #10B981;">
+              <Icon name="map-pin" size={18} />
+            </div>
+            <div class="section-head-text">
+              <h2 class="section-title">Fuera de Local</h2>
+              <p class="section-desc" id="descExterno">0 registros</p>
+            </div>
+            <select class="month-filter" data-section="externo">
+              <option value="-1">Mostrar hoy</option>
+              {months.map((m, i) => <option value={i} selected={i === currentMonth}>{m}</option>)}
+              <option value="99">Ver todos</option>
+            </select>
+            <button class="pdf-btn" data-section="externo" title="Exportar PDF">
+              <Icon name="file-text" size={16} />
+              PDF
+            </button>
+          </div>
+          <div class="debt-list" id="listExterno"></div>
+          <div class="debt-empty hidden" id="emptyExterno">
+            <Icon name="credit-card" size={24} />
+            <span>No hay deudas de Externo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div class="dtl-overlay hidden" id="detailModal">
+    <div class="dtl-panel">
+      <div class="dtl-head">
+        <div class="dtl-head-left">
+          <div class="dtl-icon" style="background: rgba(217,119,6,0.1); color: #D97706;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+          </div>
+          <div>
+            <div class="dtl-title">Detalle de Deuda</div>
+            <span class="dtl-badge" id="mSource">Origen</span>
+          </div>
+        </div>
+        <button class="dtl-close" id="modalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="dtl-body">
+        <div class="dtl-amount-row" style="background: rgba(217,119,6,0.05); border-color: rgba(217,119,6,0.08);">
+          <span class="dtl-amount" id="mAmount">S/ 0</span>
+          <span class="dtl-date" id="mStatus" style="font-size:0.78rem;font-weight:600;">—</span>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Paciente</span>
+          <p class="dtl-desc" id="mPatient">—</p>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Descripción</span>
+          <p class="dtl-desc" id="mDesc">—</p>
+        </div>
+
+        <div class="dtl-info-grid">
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Vencimiento</span>
+            <span class="dtl-info-value" id="mDue">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Estado</span>
+            <span class="dtl-info-value" id="mStatus2">—</span>
+          </div>
+        </div>
+
+        <div class="dtl-voucher-box" id="mVoucherField" style="display:none">
+          <div class="dtl-voucher-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+            <span>Comprobante</span>
+          </div>
+          <div class="dtl-voucher-img-wrap">
+            <img id="mVoucherImg" class="dtl-voucher-img" alt="Comprobante" />
+            <span id="voucherError" class="dtl-voucher-err">No se pudo cargar la imagen</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-pay" id="modalPay">
+          <Icon name="check" size={14} />
+          Marcar como Pagado
+        </button>
+        <button class="modal-btn modal-btn-delete" id="modalDelete">
+          <Icon name="trash-2" size={14} />
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print area -->
+  <div id="printArea" class="print-area"></div>
+</Layout>
+
+<script>
+  import { fetchDebts, addDebt, updateDebt, deleteDebtWithVoucher, uploadVoucher, getVoucherPreview } from '../lib/data';
+
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let debtsData = [];
+  let editingId = null;
+
+  function parseDate(dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return { day: d, month: m };
+    }
+    const dt = new Date(dateStr);
+    if (!isNaN(dt.getTime())) return { day: dt.getDate(), month: dt.getMonth() };
+    const sp = dateStr.split(' ');
+    const sd = parseInt(sp[0]);
+    const map = { 'ene':0,'feb':1,'mar':2,'abr':3,'may':4,'jun':5,'jul':6,'ago':7,'sep':8,'oct':9,'nov':10,'dic':11 };
+    return { day: sd, month: map[(sp[1]||'').toLowerCase().slice(0,3)] ?? 0 };
+  }
+
+  function formatDate(dateStr) {
+    const { day, month } = parseDate(dateStr);
+    return String(day).padStart(2,'0') + ' ' + months[month].slice(0,3);
+  }
+
+  function isOverdue(dueDate) {
+    if (!dueDate) return false;
+    const { day, month } = parseDate(dueDate);
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    const due = new Date(d.getFullYear(), month, day);
+    return due < d;
+  }
+
+  function getInitials(name) {
+    return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  }
+
+  // Form elements
+  const form = document.getElementById('debt-form');
+  const submitBtn = document.getElementById('debtSubmitBtn');
+  const cancelBtn = document.getElementById('debtCancelBtn');
+  const formTitle = document.getElementById('formTitle');
+  const formDesc = document.getElementById('formDesc');
+  const patientInput = document.getElementById('debt-patient');
+  const descInput = document.getElementById('debt-desc');
+  const amountInput = document.getElementById('debt-amount');
+  const dueInput = document.getElementById('debt-due');
+  const sourceRadios = document.querySelectorAll('[name="source"]');
+  const voucherInput = document.getElementById('debt-voucher');
+  const previewImg = document.getElementById('debt-voucher-preview');
+  const voucherArea = document.getElementById('voucher-area');
+  const voucherContent = document.getElementById('debtVoucherContent');
+  const voucherClear = document.getElementById('debtVoucherClear');
+
+  // List elements
+  const listClinica = document.getElementById('listClinica');
+  const listExterno = document.getElementById('listExterno');
+  const emptyClinica = document.getElementById('emptyClinica');
+  const emptyExterno = document.getElementById('emptyExterno');
+  const descClinica = document.getElementById('descClinica');
+  const descExterno = document.getElementById('descExterno');
+
+  // Stats
+  const statPending = document.getElementById('statPending');
+  const statPaid = document.getElementById('statPaid');
+  const statCount = document.getElementById('statCount');
+
+  // Modal
+  const modal = document.getElementById('detailModal');
+  const modalClose = document.getElementById('modalClose');
+  const modalPay = document.getElementById('modalPay');
+  const modalDelete = document.getElementById('modalDelete');
+  const mPatient = document.getElementById('mPatient');
+  const mDesc = document.getElementById('mDesc');
+  const mAmount = document.getElementById('mAmount');
+  const mSource = document.getElementById('mSource');
+  const mStatus = document.getElementById('mStatus');
+  const mStatus2 = document.getElementById('mStatus2');
+  const mDue = document.getElementById('mDue');
+  const mVoucherField = document.getElementById('mVoucherField');
+  const mVoucherImg = document.getElementById('mVoucherImg');
+
+  let selectedId = null;
+  let currentFilterClinica = -1;
+  let currentFilterExterno = -1;
+  let pageClinica = 1, pageExterno = 1;
+  const PER_PAGE = 10;
+
+  // Voucher upload
+  voucherInput?.addEventListener('change', function(e) {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        if (previewImg) {
+          previewImg.src = evt.target?.result;
+          previewImg.classList.add('show');
+        }
+        if (voucherContent) voucherContent.classList.add('hidden');
+        if (voucherClear) voucherClear.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+      const text = voucherArea?.querySelector('.voucher-text');
+      if (text) text.textContent = file.name;
+    }
+  });
+
+  voucherClear?.addEventListener('click', function() {
+    if (voucherInput) voucherInput.value = '';
+    if (previewImg) { previewImg.classList.remove('show'); previewImg.src = ''; }
+    if (voucherContent) voucherContent.classList.remove('hidden');
+    if (voucherClear) voucherClear.classList.add('hidden');
+    const text = voucherArea?.querySelector('.voucher-text');
+    if (text) text.textContent = 'Subir Comprobante';
+  });
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderSections() {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+
+    const renderSection = (listEl, emptyEl, descEl, filterVal, sourceType, page, setPage) => {
+      const items = debtsData.filter(d => d.source === sourceType);
+      const filtered = items.filter(d => {
+        if (filterVal === -1) {
+          const { day, month } = parseDate(d.dueDate);
+          return day === now.getDate() && month === now.getMonth();
+        }
+        if (filterVal === 99) return true;
+        const { month } = parseDate(d.dueDate);
+        return month === filterVal;
+      });
+
+      const pendingSum = filtered.filter(d => d.status === 'Pendiente').reduce((s, d) => s + d.amount, 0);
+      descEl.textContent = filtered.length + ' registros · S/ ' + pendingSum.toLocaleString('es-PE') + ' pend.';
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        listEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      listEl.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+
+      const totalPages = Math.ceil(filtered.length / PER_PAGE);
+      if (page > totalPages) page = totalPages;
+      const start = (page - 1) * PER_PAGE;
+      const pageItems = filtered.slice(start, start + PER_PAGE);
+
+      listEl.innerHTML = pageItems.map((d, i) => {
+        const overdue = d.status === 'Pendiente' && isOverdue(d.dueDate);
+        const statusLabel = d.status === 'Pendiente' ? 'Pendiente' : 'Pagado';
+        return `
+          <div class="d-item" data-id="${escHtml(String(d.id))}" data-source="${escHtml(d.source)}" style="animation-delay: ${i * 0.04}s">
+            <div class="d-item-main">
+              <div class="d-avatar">${escHtml(getInitials(d.patient))}</div>
+              <div class="d-info">
+                <div class="d-header">
+                  <span class="d-patient">${escHtml(d.patient)}</span>
+                  <span class="d-badge ${d.status.toLowerCase()}">${statusLabel}</span>
+                  ${overdue ? '<span class="d-overdue-badge">Vencida</span>' : ''}
+                </div>
+                <span class="d-desc">${escHtml(d.description)}</span>
+                <div class="d-meta">
+                  <span class="d-amount">S/ ${d.amount.toLocaleString('es-PE')}</span>
+                  <span class="d-sep">•</span>
+                  <span class="d-due ${overdue ? 'overdue' : ''}">Vence: ${escHtml(d.dueDate)}</span>
+                </div>
+              </div>
+              <div class="d-right">
+                <span class="d-source ${d.source === 'Clínica' ? 'clinica' : 'externo'}">${d.source === 'Clínica' ? 'Clínica' : 'Ext.'}</span>
+                <button class="d-toggle" onclick="window.openDebtModal('${escHtml(String(d.id))}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                </button>
+                <button class="d-action-btn d-edit-btn" onclick="window.editDebt('${escHtml(String(d.id))}')" aria-label="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="d-action-btn d-pay-btn" onclick="window.payDebt('${escHtml(String(d.id))}')" aria-label="Pagar" title="Marcar como Pagado">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (totalPages > 1) {
+        let pagHtml = '<div class="pagination" data-section="' + sourceType + '">';
+        if (page > 1) pagHtml += `<button class="pag-btn" data-page="${page - 1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg> Anterior</button>`;
+        for (let p = 1; p <= totalPages; p++) {
+          const active = p === page ? ' active' : '';
+          pagHtml += `<button class="pag-btn${active}" data-page="${p}">${p}</button>`;
+        }
+        if (page < totalPages) pagHtml += `<button class="pag-btn" data-page="${page + 1}">Siguiente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></button>`;
+        pagHtml += '</div>';
+        listEl.insertAdjacentHTML('beforeend', pagHtml);
+      }
+    };
+
+    renderSection(listClinica, emptyClinica, descClinica, currentFilterClinica, 'Clínica', pageClinica, (v) => { pageClinica = v; });
+    renderSection(listExterno, emptyExterno, descExterno, currentFilterExterno, 'Externo', pageExterno, (v) => { pageExterno = v; });
+    updateStats();
+  }
+
+  function updateStats() {
+    const pending = debtsData.filter(d => d.status === 'Pendiente').reduce((s, d) => s + d.amount, 0);
+    const paid = debtsData.filter(d => d.status === 'Pagado').reduce((s, d) => s + d.amount, 0);
+    statPending.textContent = 'S/ ' + pending.toLocaleString('es-PE');
+    statPaid.textContent = 'S/ ' + paid.toLocaleString('es-PE');
+    statCount.textContent = debtsData.length;
+  }
+
+  // Pagination clicks
+  document.addEventListener('click', function(e) {
+    const pagBtn = e.target.closest('.pag-btn');
+    if (!pagBtn) return;
+    const pagWrap = pagBtn.closest('.pagination');
+    if (!pagWrap) return;
+    const section = pagWrap.dataset.section;
+    const p = parseInt(pagBtn.dataset.page);
+    if (section === 'Clínica') { pageClinica = p; }
+    else if (section === 'Externo') { pageExterno = p; }
+    renderSections();
+  });
+
+  // Month filters
+  document.querySelectorAll('.month-filter').forEach(sel => {
+    sel.addEventListener('change', function() {
+      const section = this.dataset.section;
+      if (section === 'clinica') {
+        currentFilterClinica = parseInt(this.value);
+        pageClinica = 1;
+      } else {
+        currentFilterExterno = parseInt(this.value);
+        pageExterno = 1;
+      }
+      renderSections();
+    });
+  });
+
+  // Form submit
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
+    const patient = data.get('patient');
+    const description = data.get('description');
+    const amount = parseFloat(data.get('amount'));
+    const dueDate = data.get('dueDate');
+    const source = data.get('source') || 'Clínica';
+    if (!patient || !description || !amount || !dueDate) {
+      window.showToast('Completa todos los campos obligatorios.', 'error');
+      return;
+    }
+    let file = voucherInput?.files?.[0] || null;
+
+    if (editingId) {
+      const event = new CustomEvent('update-debt', {
+        detail: { id: editingId, patient, description, amount, dueDate, source, file }
+      });
+      document.dispatchEvent(event);
+    } else {
+      const event = new CustomEvent('new-debt', {
+        detail: { patient, description, amount, dueDate, source, file }
+      });
+      document.dispatchEvent(event);
+    }
+    resetForm();
+  });
+
+  document.addEventListener('new-debt', async function(e) {
+    const debt = e.detail;
+    try {
+      let voucher = '';
+      if (debt.file) {
+        try {
+          voucher = await uploadVoucher(debt.file);
+        } catch (err) {
+          console.warn('Error uploading voucher, debt will be saved without image:', err);
+        }
+      }
+      const created = await addDebt({
+        patient: debt.patient,
+        description: debt.description,
+        amount: debt.amount,
+        dueDate: debt.dueDate,
+        source: debt.source,
+        voucher
+      });
+      debt.id = created.$id;
+      debt.voucher = voucher;
+      debt.status = 'Pendiente';
+      debtsData.unshift({ ...debt });
+      renderSections();
+      window.showToast('Deuda registrada correctamente.', 'success');
+    } catch (err) {
+      console.error('Error saving debt to Appwrite:', err);
+      window.showToast('Error al guardar la deuda.', 'error');
+    }
+  });
+
+  document.addEventListener('update-debt', async function(e) {
+    const debt = e.detail;
+    try {
+      const updateData = {
+        patient: debt.patient,
+        description: debt.description,
+        amount: debt.amount,
+        dueDate: debt.dueDate,
+        source: debt.source,
+      };
+      let voucher = '';
+      if (debt.file) {
+        try {
+          voucher = await uploadVoucher(debt.file);
+          updateData.voucher = voucher;
+        } catch (err) {
+          console.warn('Error uploading voucher:', err);
+        }
+      }
+      await updateDebt(debt.id, updateData);
+      const idx = debtsData.findIndex(d => String(d.id) === String(debt.id));
+      if (idx >= 0) {
+        debtsData[idx] = { ...debtsData[idx], ...updateData, voucher: voucher || debtsData[idx].voucher };
+      }
+      editingId = null;
+      renderSections();
+      window.showToast('Deuda actualizada.', 'success');
+    } catch (err) {
+      console.error('Error updating debt:', err);
+      window.showToast('Error al actualizar la deuda.', 'error');
+    }
+  });
+
+  document.addEventListener('cancel-debt-edit', function() {
+    editingId = null;
+  });
+
+  function resetForm() {
+    editingId = null;
+    form.reset();
+    sourceRadios[0].checked = true;
+    if (previewImg) { previewImg.classList.remove('show'); previewImg.src = ''; }
+    if (voucherContent) voucherContent.classList.remove('hidden');
+    if (voucherClear) voucherClear.classList.add('hidden');
+    const text = voucherArea?.querySelector('.voucher-text');
+    if (text) text.textContent = 'Subir Comprobante';
+    if (voucherInput) voucherInput.value = '';
+    submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg> Guardar Deuda';
+    cancelBtn.classList.add('hidden');
+    formTitle.textContent = 'Nueva Deuda';
+    formDesc.textContent = 'Registra una nueva deuda';
+  }
+
+  cancelBtn.addEventListener('click', function() {
+    resetForm();
+    document.dispatchEvent(new CustomEvent('cancel-debt-edit'));
+  });
+
+  // Global functions for inline onclick handlers
+  window.openDebtModal = async function(id) {
+    const d = debtsData.find(x => String(x.id) === String(id));
+    if (!d) return;
+    selectedId = d.id;
+    mPatient.textContent = d.patient;
+    mDesc.textContent = d.description;
+    mAmount.textContent = 'S/ ' + d.amount.toLocaleString('es-PE');
+    mSource.textContent = d.source;
+    const statusLabel = d.status === 'Pendiente' ? 'Pendiente' : 'Pagado';
+    mStatus.textContent = statusLabel;
+    mStatus.style.color = d.status === 'Pendiente' ? '#D97706' : '#059669';
+    mStatus2.textContent = statusLabel;
+    mStatus2.style.color = d.status === 'Pendiente' ? '#D97706' : '#059669';
+    mDue.textContent = d.dueDate;
+    mDue.style.color = d.status === 'Pendiente' && isOverdue(d.dueDate) ? '#DC2626' : 'inherit';
+
+    if (d.voucher && mVoucherField && mVoucherImg) {
+      mVoucherField.style.display = '';
+      const errEl = document.getElementById('voucherError');
+      try {
+        const url = getVoucherPreview(d.voucher);
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        mVoucherImg.src = URL.createObjectURL(blob);
+        mVoucherImg.style.display = '';
+        if (errEl) errEl.style.display = 'none';
+      } catch (err) {
+        console.warn('Failed to load voucher image:', err);
+        mVoucherImg.style.display = 'none';
+        if (errEl) errEl.style.display = '';
+      }
+    } else if (mVoucherField) {
+      mVoucherField.style.display = 'none';
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('visible');
+  };
+
+  window.editDebt = function(id) {
+    const d = debtsData.find(x => String(x.id) === String(id));
+    if (!d) return;
+    editingId = d.id;
+    document.querySelector('[name="source"][value="' + d.source + '"]').checked = true;
+    patientInput.value = d.patient;
+    descInput.value = d.description;
+    amountInput.value = d.amount;
+    dueInput.value = d.dueDate;
+    submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg> Actualizar Deuda';
+    cancelBtn.classList.remove('hidden');
+    formTitle.textContent = 'Editar Deuda';
+    formDesc.textContent = 'Modifica los datos de la deuda';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.payDebt = async function(id) {
+    const d = debtsData.find(x => String(x.id) === String(id));
+    if (!d || d.status !== 'Pendiente') return;
+    try {
+      await updateDebt(id, { status: 'Pagado' });
+      d.status = 'Pagado';
+      renderSections();
+      window.showToast('Deuda marcada como pagada.', 'success');
+    } catch (err) {
+      console.error('Error updating debt status:', err);
+      window.showToast('Error al actualizar la deuda.', 'error');
+    }
+  };
+
+  // Modal buttons
+  function closeModal() {
+    modal.classList.remove('visible');
+    modal.classList.add('hidden');
+    selectedId = null;
+  }
+  modalClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+
+  modalPay.addEventListener('click', async function() {
+    if (!selectedId) return;
+    const d = debtsData.find(x => String(x.id) === String(selectedId));
+    if (d && d.status === 'Pendiente') {
+      try {
+        await updateDebt(selectedId, { status: 'Pagado' });
+        d.status = 'Pagado';
+        closeModal();
+        renderSections();
+        window.showToast('Deuda marcada como pagada.', 'success');
+      } catch (err) {
+        console.error('Error updating debt status:', err);
+        window.showToast('Error al actualizar la deuda.', 'error');
+      }
+    }
+  });
+
+  modalDelete.addEventListener('click', async function() {
+    if (!selectedId) return;
+    const d = debtsData.find(x => String(x.id) === String(selectedId));
+    const ok = await window.showConfirm('¿Eliminar esta deuda?');
+    if (!ok) return;
+    try {
+      await deleteDebtWithVoucher(selectedId, d?.voucher);
+      debtsData = debtsData.filter(x => String(x.id) !== String(selectedId));
+      closeModal();
+      renderSections();
+      window.showToast('Deuda eliminada.', 'success');
+    } catch (err) {
+      console.error('Error deleting debt:', err);
+      window.showToast('Error al eliminar la deuda.', 'error');
+    }
+  });
+
+  // Export PDF
+  document.querySelectorAll('.pdf-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const section = this.dataset.section;
+      const sourceType = section === 'clinica' ? 'Clínica' : 'Externo';
+      const filterVal = section === 'clinica' ? currentFilterClinica : currentFilterExterno;
+      const now = new Date();
+
+      const items = debtsData.filter(d => d.source === sourceType);
+      const filtered = items.filter(d => {
+        if (filterVal === -1) {
+          const { day, month } = parseDate(d.dueDate);
+          return day === now.getDate() && month === now.getMonth();
+        }
+        if (filterVal === 99) return true;
+        const { month } = parseDate(d.dueDate);
+        return month === filterVal;
+      });
+
+      if (filtered.length === 0) {
+        window.showToast('No hay deudas para exportar.', 'info');
+        return;
+      }
+
+      const label = filterVal === -1 ? 'Hoy' : filterVal === 99 ? 'Todos' : months[filterVal];
+      const total = filtered.reduce((s, d) => s + d.amount, 0);
+      const pendingCount = filtered.filter(d => d.status === 'Pendiente').length;
+      const paidCount = filtered.filter(d => d.status === 'Pagado').length;
+
+      const rows = await Promise.all(filtered.map(async (d) => {
+        const overdue = d.status === 'Pendiente' && isOverdue(d.dueDate);
+        let imgHtml = '';
+        if (d.voucher) {
+          try {
+            const url = getVoucherPreview(d.voucher);
+            const resp = await fetch(url);
+            if (resp.ok) {
+              const blob = await resp.blob();
+              const dataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              });
+              imgHtml = `<img src="${dataUrl}" class="print-voucher" />`;
+            }
+          } catch (_) {}
+        }
+        const statusLabel = d.status === 'Pendiente' ? (overdue ? 'Vencida' : 'Pendiente') : 'Pagado';
+        return `<tr><td>${escHtml(d.dueDate)}</td><td>${escHtml(d.patient)}</td><td>${escHtml(d.description)}</td><td style="text-align:right">S/ ${d.amount.toLocaleString('es-PE')}</td><td>${statusLabel}</td><td>${imgHtml}</td></tr>`;
+      }));
+      const rowsHtml = rows.join('');
+
+      const printArea = document.getElementById('printArea');
+      printArea.innerHTML = `
+        <div class="print-header">
+          <div class="print-brand">
+            <svg class="print-logo" viewBox="0 0 128 128" width="36" height="36"><rect width="128" height="128" rx="28" fill="#0D9488"/><path d="M64 28c-21 0-32 11-32 30 0 19 4 40 10 54 2 6 5 16 11 16 3 0 6-2 9-4l2-2 2 2c3 2 6 4 9 4 6 0 9-10 11-16 6-14 10-35 10-54 0-19-11-30-32-30z" fill="#fff"/><path d="M50 44c5-4 10-6 14-6s9 2 14 6" fill="none" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/></svg>
+            <div>
+              <div class="print-brand-name">DentFinance</div>
+              <div class="print-brand-tag">Sistema de Gestión Dental</div>
+            </div>
+          </div>
+          <div class="print-title-block">
+            <h1 class="print-title">Reporte de Deudas — ${sourceType}</h1>
+            <p class="print-period">${label} · ${now.getFullYear()}</p>
+          </div>
+          <div class="print-meta">
+            <span>Generado: ${now.toLocaleDateString('es-PE', { year:'numeric', month:'long', day:'numeric' })}</span>
+            <span>${now.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' })}</span>
+          </div>
+        </div>
+        <div class="print-summary">
+          <div class="print-summary-item">
+            <span class="print-summary-label">Total Deudas</span>
+            <span class="print-summary-value">S/ ${total.toLocaleString('es-PE')}</span>
+          </div>
+          <div class="print-summary-item">
+            <span class="print-summary-label">Pendientes</span>
+            <span class="print-summary-value">${pendingCount}</span>
+          </div>
+          <div class="print-summary-item">
+            <span class="print-summary-label">Pagadas</span>
+            <span class="print-summary-value">${paidCount}</span>
+          </div>
+          <div class="print-summary-item">
+            <span class="print-summary-label">Periodo</span>
+            <span class="print-summary-value">${label}</span>
+          </div>
+        </div>
+        <table class="print-table">
+          <thead><tr><th>Vencimiento</th><th>Paciente</th><th>Descripción</th><th>Monto</th><th>Estado</th><th>Comprobante</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot><tr><td colspan="3" style="text-align:right;font-weight:700;font-size:0.85rem">Total</td><td style="text-align:right;font-weight:700;font-size:0.85rem">S/ ${total.toLocaleString('es-PE')}</td><td></td><td></td></tr></tfoot>
+        </table>
+        <div class="print-footer">
+          <p>DentFinance © ${now.getFullYear()} — Reporte generado automáticamente</p>
+        </div>
+      `;
+      printArea.classList.add('print-active');
+      window.print();
+      setTimeout(() => {
+        printArea.classList.remove('print-active');
+        printArea.innerHTML = '';
+      }, 1000);
+    });
+  });
+
+  // Init
+  async function init() {
+    try {
+      const docs = await fetchDebts();
+      debtsData = docs.map(d => ({
+        id: d.$id,
+        patient: d.patient || '',
+        description: d.description || '',
+        amount: Number(d.amount) || 0,
+        dueDate: d.dueDate || d.$createdAt,
+        source: d.source || 'Clínica',
+        status: d.status || 'Pendiente',
+        voucher: d.voucher || ''
+      }));
+    } catch (err) {
+      console.warn('No se pudieron cargar las deudas desde Appwrite:', err);
+    }
+    renderSections();
+    checkOverdueDebts();
+  }
+
+  function checkOverdueDebts() {
+    const overdue = debtsData.filter(d => d.status === 'Pendiente' && isOverdue(d.dueDate));
+    if (overdue.length > 0) {
+      const total = overdue.reduce((s, d) => s + d.amount, 0);
+      const names = overdue.map(d => d.patient).slice(0, 3).join(', ');
+      const more = overdue.length > 3 ? ` y ${overdue.length - 3} más` : '';
+      window.showToast(`🔔 ${overdue.length} deuda${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''} — S/ ${total.toLocaleString('es-PE')} (${names}${more})`, 'warning', 8000);
+      // Mark overdue as read in session so it only alerts once per session
+      sessionStorage.setItem('df_overdue_notified', 'true');
+    }
+  }
+
+  // Re-check overdue every 5 minutes
+  setInterval(checkOverdueDebts, 300000);
+
+  init();
+</script>
+
+<style is:global>
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes dtlIn { from { opacity: 0; transform: scale(0.92) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+  .page { max-width: 1200px; margin: 0 auto; }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.75rem; flex-wrap: wrap; gap: 0.75rem;
+  }
+  .page-title { font-size: 1.5rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; line-height: 1.3; }
+  .page-subtitle { font-size: 0.85rem; color: var(--c-text-light); margin-top: 0.1rem; }
+
+  .page-header-stats { display: flex; gap: 0.5rem; }
+  .stat-chip {
+    padding: 0.4rem 0.75rem; background: var(--c-glass);
+    border: 1px solid var(--c-glass-border); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 0.05rem;
+  }
+  .stat-chip-label { font-size: 0.6rem; color: var(--c-text-light); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+  .stat-chip-value { font-size: 0.95rem; font-weight: 700; color: var(--c-text); }
+
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+
+  .glass-card {
+    background: var(--c-glass); backdrop-filter: blur(12px);
+    border: 1px solid var(--c-glass-border); border-radius: var(--radius-lg);
+    padding: 1.5rem; box-shadow: var(--shadow-md);
+  }
+
+  .section-head {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    margin-bottom: 1.25rem; padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .section-head-text { flex: 1; }
+  .section-head-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(13,148,136,0.1); color: var(--c-primary);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .section-title { font-size: 1rem; font-weight: 600; color: var(--c-text); }
+  .section-desc { font-size: 0.78rem; color: var(--c-text-light); margin-top: 0.05rem; }
+
+  .month-filter {
+    padding: 0.35rem 0.65rem; border-radius: 8px;
+    border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg);
+    font-family: var(--font-sans); font-size: 0.72rem;
+    color: var(--c-text); cursor: pointer; outline: none;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .month-filter:hover { background: var(--c-btn-secondary-hover); border-color: var(--c-glass-border-strong); }
+  .month-filter option { background: var(--c-surface); color: var(--c-text); }
+
+  .pdf-btn {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.35rem 0.65rem; border-radius: 8px;
+    border: 1px solid var(--c-glass-border);
+    background: rgba(239,68,68,0.08); color: #DC2626;
+    font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .pdf-btn:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+    margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--c-border);
+  }
+  .pag-btn {
+    padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg); color: var(--c-text);
+    font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.25rem;
+  }
+  .pag-btn:hover { background: var(--c-btn-secondary-hover); border-color: var(--c-glass-border-strong); }
+  .pag-btn.active { background: var(--c-primary); color: white; border-color: var(--c-primary); }
+  .pag-btn svg { width: 14px; height: 14px; }
+
+  /* Form */
+  .debt-form { display: flex; flex-direction: column; gap: 0.85rem; }
+  .form-row { display: flex; gap: 0.75rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .flex-1 { flex: 1; }
+  .form-label { font-size: 0.78rem; font-weight: 600; color: var(--c-text-secondary); }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-icon {
+    position: absolute; left: 0;
+    width: 2.25rem; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--c-text-light); pointer-events: none; opacity: 0.45;
+    border-right: 1px solid var(--c-input-border);
+    top: 0; flex-shrink: 0;
+  }
+  .input-icon svg { width: 16px; height: 16px; display: block; }
+  .form-input {
+    width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.75rem;
+    border: 1.5px solid var(--c-input-border);
+    border-radius: var(--radius-md); font-size: 0.85rem;
+    background: var(--c-input-bg); color: var(--c-text);
+    transition: all 0.2s; font-family: var(--font-sans);
+    outline: none; line-height: 1.4;
+  }
+  .form-input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-glow); }
+  .form-input::placeholder { color: var(--c-input-placeholder); }
+  input[type="date"].form-input { color-scheme: light; cursor: pointer; }
+  [data-theme="dark"] input[type="date"].form-input { color-scheme: dark; }
+
+  .form-divider { height: 1px; background: var(--c-border); margin: 0.25rem 0; }
+
+  .radio-row { display: flex; gap: 0.6rem; }
+  .radio-card {
+    flex: 1; border: 2px solid var(--c-glass-border); border-radius: var(--radius-md);
+    padding: 0.85rem; cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    background: var(--c-card-bg);
+  }
+  .radio-card:hover { border-color: var(--c-primary); }
+  .radio-card input[type="radio"] { display: none; }
+  .radio-card input[type="radio"]:checked + .radio-content { color: var(--c-primary); }
+  .radio-card:has(input:checked) { border-color: var(--c-primary); background: rgba(13,148,136,0.05); }
+  .radio-content { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .radio-content svg { opacity: 0.6; }
+  .radio-card:has(input:checked) .radio-content svg { opacity: 1; color: var(--c-primary); }
+  .radio-title { font-weight: 600; font-size: 0.8rem; color: var(--c-text); }
+  .radio-card:has(input:checked) .radio-title { color: var(--c-primary); }
+
+  .btn-save {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+    color: white; padding: 0.7rem 1.25rem; border-radius: var(--radius-md);
+    font-weight: 600; font-size: 0.88rem; border: none; cursor: pointer;
+    transition: all 0.2s; font-family: var(--font-sans);
+  }
+  .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(13,148,136,0.35); }
+
+  .form-actions { display: flex; gap: 0.5rem; }
+
+  .btn-cancel {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: var(--c-btn-secondary-bg); color: var(--c-text);
+    padding: 0.7rem 1.25rem; border-radius: var(--radius-md);
+    font-weight: 600; font-size: 0.88rem; border: 1px solid var(--c-glass-border); cursor: pointer;
+    transition: all 0.2s; font-family: var(--font-sans);
+  }
+  .btn-cancel:hover { background: var(--c-btn-secondary-hover); }
+
+  .voucher-upload {
+    position: relative; border: 2px dashed var(--c-input-border);
+    border-radius: var(--radius-md); padding: 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--c-card-bg);
+  }
+  .voucher-upload:hover { border-color: var(--c-primary); background: var(--c-card-hover-bg); }
+  .voucher-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .voucher-content { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .voucher-icon-wrap {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(13,148,136,0.1); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .voucher-icon { width: 24px; height: 24px; color: var(--c-primary); }
+  .voucher-text { font-size: 0.9rem; font-weight: 600; color: var(--c-text); }
+  .voucher-subtext { font-size: 0.7rem; color: var(--c-text-light); }
+  .voucher-preview { display: none; max-width: 100%; max-height: 180px; margin: 0.75rem auto 0; border-radius: 8px; box-shadow: var(--shadow-sm); }
+  .voucher-preview.show { display: block; }
+  .voucher-clear {
+    margin-top: 0.5rem; padding: 0.35rem 0.75rem;
+    background: rgba(239,68,68,0.08); color: var(--c-danger);
+    border: 1px solid rgba(239,68,68,0.12); border-radius: 6px;
+    font-size: 0.72rem; font-weight: 500; cursor: pointer;
+    font-family: var(--font-sans); transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+  }
+  .voucher-clear:hover { background: rgba(239,68,68,0.15); }
+  .hidden { display: none !important; }
+
+  /* Debt sections */
+  .debt-sections { display: flex; flex-direction: column; gap: 1rem; }
+
+  .debt-list { display: flex; flex-direction: column; gap: 0.35rem; }
+  .debt-list.hidden { display: none; }
+
+  .d-item {
+    border: 1px solid var(--c-glass-border); border-radius: var(--radius-md);
+    background: var(--c-card-bg);
+    animation: fadeSlide 0.4s ease both;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    overflow: hidden;
+  }
+  .d-item:hover { box-shadow: var(--shadow-sm); border-color: var(--c-glass-border-strong); }
+
+  .d-item-main {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+  }
+  .d-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #0D9488, #14B8A6);
+    color: white; font-size: 0.7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; letter-spacing: 0.02em;
+  }
+  .d-info { flex: 1; min-width: 0; }
+  .d-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.05rem; flex-wrap: wrap; }
+  .d-patient { font-weight: 600; font-size: 0.85rem; color: var(--c-text); }
+  .d-badge {
+    font-size: 0.58rem; padding: 0.08rem 0.4rem; border-radius: 20px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .d-badge.pendiente { background: rgba(245,158,11,0.12); color: #D97706; }
+  .d-badge.pagado { background: rgba(16,185,129,0.12); color: #059669; }
+  .d-overdue-badge {
+    font-size: 0.58rem; padding: 0.08rem 0.4rem; border-radius: 20px;
+    font-weight: 600; background: rgba(239,68,68,0.12); color: #DC2626;
+  }
+  .d-desc { display: block; font-size: 0.72rem; color: var(--c-text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-meta { display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem; }
+  .d-amount { font-size: 0.85rem; font-weight: 700; color: var(--c-text); }
+  .d-sep { font-size: 0.5rem; color: var(--c-text-light); }
+  .d-due { font-size: 0.65rem; color: var(--c-text-light); }
+  .d-due.overdue { color: #DC2626; font-weight: 600; }
+
+  .d-right { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+  .d-source {
+    font-size: 0.6rem; padding: 0.15rem 0.45rem; border-radius: 6px;
+    font-weight: 600;
+  }
+  .d-source.clinica { background: rgba(13,148,136,0.1); color: #0D9488; }
+  .d-source.externo { background: rgba(16,185,129,0.1); color: #10B981; }
+  .d-toggle {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--c-text-light);
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .d-toggle:hover { background: var(--c-card-hover-bg); color: var(--c-text); }
+
+  .d-action-btn {
+    width: 26px; height: 26px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--c-text-light);
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .d-edit-btn:hover { background: var(--c-card-hover-bg); color: #6366F1; }
+  .d-pay-btn:hover { background: var(--c-card-hover-bg); color: var(--c-success); }
+
+  .debt-empty {
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    padding: 2rem; color: var(--c-text-light); text-align: center;
+  }
+  .debt-empty svg { opacity: 0.3; width: 28px; height: 28px; }
+  .debt-empty span { font-size: 0.82rem; }
+  .debt-empty.hidden { display: none; }
+
+  /* Modal detail (dtl-*) */
+  .dtl-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .dtl-overlay.visible { opacity: 1; pointer-events: auto; }
+  .dtl-overlay.hidden { display: none; }
+  .dtl-overlay.visible.hidden { display: flex; }
+
+  .dtl-panel {
+    background: var(--c-surface);
+    border: 1px solid var(--c-glass-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    width: 100%; max-width: 440px;
+    animation: dtlIn 0.25s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden;
+  }
+
+  .dtl-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.125rem 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .dtl-head-left { display: flex; align-items: center; gap: 0.75rem; }
+  .dtl-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(217,119,6,0.1); color: #D97706;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dtl-title { font-size: 1rem; font-weight: 700; color: var(--c-text); line-height: 1.3; }
+  .dtl-badge {
+    display: inline-block; font-size: 0.65rem; font-weight: 600;
+    background: rgba(13,148,136,0.1); color: var(--c-primary);
+    padding: 0.15rem 0.5rem; border-radius: 20px; margin-top: 0.1rem;
+  }
+  .dtl-close {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--c-text-light);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .dtl-close:hover { background: var(--c-card-hover-bg); color: var(--c-text); }
+
+  .dtl-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .dtl-amount-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(217,119,6,0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(217,119,6,0.08);
+  }
+  .dtl-amount { font-size: 1.5rem; font-weight: 800; color: #D97706; letter-spacing: -0.02em; }
+
+  .dtl-desc-box {
+    padding: 0.85rem 1rem;
+    background: var(--c-card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--c-glass-border);
+  }
+  .dtl-desc-label {
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--c-text-light); margin-bottom: 0.3rem; display: block;
+  }
+  .dtl-desc { font-size: 0.92rem; color: var(--c-text); margin: 0; line-height: 1.5; }
+
+  .dtl-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  }
+  .dtl-info-item {
+    padding: 0.65rem 0.85rem;
+    background: var(--c-card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--c-glass-border);
+  }
+  .dtl-info-label {
+    display: block; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--c-text-light); margin-bottom: 0.2rem;
+  }
+  .dtl-info-value { font-size: 0.82rem; font-weight: 700; color: var(--c-text); }
+
+  .dtl-voucher-box {
+    border: 1px solid var(--c-glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .dtl-voucher-header {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: var(--c-card-bg);
+    border-bottom: 1px solid var(--c-glass-border);
+    font-size: 0.72rem; font-weight: 600; color: var(--c-text-light); text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .dtl-voucher-img-wrap { padding: 0.75rem; background: var(--c-card-bg); }
+  .dtl-voucher-img {
+    display: block; max-width: 100%; max-height: 220px;
+    border-radius: 8px; margin: 0 auto;
+    box-shadow: var(--shadow-sm); object-fit: contain;
+  }
+  .dtl-voucher-err {
+    display: none; font-size: 0.78rem; color: var(--c-text-light);
+    text-align: center; padding: 1rem;
+  }
+
+  .modal-actions {
+    display: flex; gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--c-border);
+  }
+  .modal-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+    padding: 0.5rem 0.85rem; border-radius: 8px;
+    font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    font-family: var(--font-sans); border: none;
+    transition: all 0.15s; flex: 1;
+  }
+  .modal-btn-pay { background: rgba(13,148,136,0.1); color: var(--c-primary); }
+  .modal-btn-pay:hover { background: var(--c-primary); color: white; }
+  .modal-btn-delete { background: rgba(239,68,68,0.1); color: #DC2626; }
+  .modal-btn-delete:hover { background: rgba(239,68,68,0.2); }
+
+  /* Print */
+  .print-area { display: none; }
+  .print-area.print-active { display: block; }
+
+  @media print {
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 2rem 2.5rem; display: block; box-sizing: border-box; }
+    .print-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #0D9488; }
+    .print-brand { display: flex; align-items: center; gap: 0.6rem; }
+    .print-logo { width: 36px; height: 36px; }
+    .print-brand-name { font-size: 1.2rem; font-weight: 800; color: #0D9488; line-height: 1.2; }
+    .print-brand-tag { font-size: 0.65rem; color: #94A3B8; }
+    .print-title-block { text-align: center; }
+    .print-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: #1E293B; }
+    .print-period { font-size: 0.75rem; color: #64748B; margin: 0.15rem 0 0; }
+    .print-meta { text-align: right; font-size: 0.65rem; color: #94A3B8; line-height: 1.5; }
+    .print-summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .print-summary-item { flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.6rem 0.8rem; text-align: center; }
+    .print-summary-label { display: block; font-size: 0.6rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; }
+    .print-summary-value { display: block; font-size: 0.95rem; font-weight: 700; color: #0F172A; margin-top: 0.15rem; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .print-table th { background: #0D9488; color: white; padding: 0.5rem 0.6rem; text-align: left; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .print-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #E2E8F0; color: #1E293B; }
+    .print-table tbody tr:nth-child(even) { background: #F8FAFC; }
+    .print-table tfoot td { border-top: 2px solid #0D9488; padding-top: 0.5rem; }
+    .print-voucher { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #E2E8F0; display: block; }
+    .print-footer { margin-top: 1.5rem; padding-top: 0.75rem; border-top: 1px solid #E2E8F0; text-align: center; }
+    .print-footer p { font-size: 0.6rem; color: #94A3B8; margin: 0; }
+  }
+
+  @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) {
+    .page-header { flex-direction: column; }
+    .section-head { flex-wrap: wrap; }
+    .form-row { flex-direction: column; }
+    .radio-row { flex-direction: column; }
+    .dtl-info-grid { grid-template-columns: 1fr; }
+    .d-item-main { flex-wrap: wrap; gap: 0.5rem; }
+    .d-right { flex-wrap: wrap; }
+  }
+</style>

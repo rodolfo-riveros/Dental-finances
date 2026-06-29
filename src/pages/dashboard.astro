@@ -1,0 +1,967 @@
+---
+import Layout from '../layouts/Layout.astro';
+import IncomeChart from '../components/IncomeChart.astro';
+import Icon from '../components/Icon.astro';
+
+const today = new Date();
+const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const dateStr = `${today.getDate()} de ${months[today.getMonth()]} ${today.getFullYear()}`;
+const hour = today.getHours();
+const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
+
+const dummyData = {
+  '0': { ganancia: 1500, gastos: 480, deudas: 850, clinica: 1050, externo: 450 },
+  '1': { ganancia: 1320, gastos: 510, deudas: 920, clinica: 920, externo: 400 },
+  '2': { ganancia: 1680, gastos: 440, deudas: 780, clinica: 1180, externo: 500 },
+  '3': { ganancia: 1450, gastos: 530, deudas: 820, clinica: 1000, externo: 450 },
+  '4': { ganancia: 1720, gastos: 460, deudas: 760, clinica: 1250, externo: 470 },
+  '5': { ganancia: 1580, gastos: 490, deudas: 810, clinica: 1100, externo: 480 },
+  '6': { ganancia: 1430, gastos: 520, deudas: 870, clinica: 980, externo: 450 },
+  '7': { ganancia: 1610, gastos: 470, deudas: 800, clinica: 1150, externo: 460 },
+  '8': { ganancia: 1550, gastos: 500, deudas: 830, clinica: 1080, externo: 470 },
+  '9': { ganancia: 1490, gastos: 485, deudas: 860, clinica: 1040, externo: 450 },
+  '10': { ganancia: 1630, gastos: 455, deudas: 790, clinica: 1160, externo: 470 },
+  '11': { ganancia: 1470, gastos: 505, deudas: 840, clinica: 1020, externo: 450 },
+};
+
+const currentMonthIdx = today.getMonth();
+const currentData = dummyData[String(currentMonthIdx)];
+const prevIdx = currentMonthIdx === 0 ? 11 : currentMonthIdx - 1;
+const prevData = dummyData[String(prevIdx)];
+const gananciaChange = prevData.ganancia > 0 ? ((currentData.ganancia - prevData.ganancia) / prevData.ganancia * 100) : 0;
+const gastosChange = prevData.gastos > 0 ? ((currentData.gastos - prevData.gastos) / prevData.gastos * 100) : 0;
+const gananciaChangeStr = (gananciaChange >= 0 ? '+' : '') + gananciaChange.toFixed(0) + '%';
+const gastosChangeStr = (gastosChange >= 0 ? '+' : '') + gastosChange.toFixed(0) + '%';
+const isGananciaUp = gananciaChange >= 0;
+const isGastosUp = gastosChange >= 0;
+const gananciaPct = currentData.ganancia > 0 ? (currentData.ganancia / (currentData.ganancia + currentData.gastos) * 100) : 0;
+const gastosPct = currentData.gastos > 0 ? (currentData.gastos / (currentData.ganancia + currentData.gastos) * 100) : 0;
+---
+
+<Layout title="Dashboard - DentFinance">
+  <div class="dash">
+    <!-- Greeting Card -->
+    <div class="greeting-card-3d">
+      <div class="greeting-bg" />
+      <div class="greeting-glow" />
+      <div class="greeting-content">
+        <div class="greeting-text">
+          <div class="greeting-saludo"><span id="greetingText">{greeting}</span>, <strong id="greetingName">Admin</strong></div>
+          <div class="greeting-date">
+            <Icon name="calendar" size={14} />
+            <span id="greetingDate">{dateStr}</span>
+          </div>
+        </div>
+        <div class="greeting-actions">
+          <select class="dash-select month-filter" id="monthFilter">
+            {months.map((m, i) => (
+              <option value={i} selected={i === currentMonthIdx}>{m} {today.getFullYear()}</option>
+            ))}
+          </select>
+          <div class="greeting-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 0-6 2-6 5.5 0 3.5.8 7.5 1.8 10 .5 1.2 1.3 3.5 2.7 3.5.5 0 1-.2 1.5-.5L12 21l.6.5c.5.3 1 .5 1.5.5 1.4 0 2.2-2.3 2.7-3.5C17.2 16 18 12 18 8.5 18 5 16 3 12 3z"/><path d="M9 7.5c1-.5 2-1 3-1s2 .5 3 1"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="dash-cards" id="summaryCards">
+      <div class="dash-card" style="--card-accent: #059669">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(5,150,105,0.15), transparent 70%)" />
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(5,150,105,0.12); color:#059669">
+              <Icon name="dollar-sign" size=20 />
+            </div>
+            <span class="dash-card-label">Ganancia Total</span>
+          </div>
+          <span class="dash-card-value" id="valGanancia">S/ {currentData.ganancia.toLocaleString('es-PE')}</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change" class:list={isGananciaUp ? 'up' : 'down'} id="changeGanancia">
+              <Icon name={isGananciaUp ? "trending-up" : "trending-down"} size=12 />
+              {gananciaChangeStr} vs mes anterior
+            </span>
+            <div class="dash-card-mini">
+              <span>{months[currentMonthIdx].slice(0,3)}</span>
+              <span>{months[prevIdx].slice(0,3)}</span>
+              <div class="mini-bar"><div class="mini-fill" style="width:75%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" style="width:63%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="--card-accent: #DC2626">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(220,38,38,0.12), transparent 70%)" />
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(220,38,38,0.12); color:#DC2626">
+              <Icon name="receipt" size=20 />
+            </div>
+            <span class="dash-card-label">Gastos del Mes</span>
+          </div>
+          <span class="dash-card-value" id="valGastos">S/ {currentData.gastos.toLocaleString('es-PE')}</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change" class:list={isGastosUp ? 'up' : 'down'} id="changeGastos">
+              <Icon name={isGastosUp ? "trending-up" : "trending-down"} size=12 />
+              {gastosChangeStr} vs mes anterior
+            </span>
+            <div class="dash-card-mini">
+              <span>{months[currentMonthIdx].slice(0,3)}</span>
+              <span>{months[prevIdx].slice(0,3)}</span>
+              <div class="mini-bar"><div class="mini-fill" style="width:40%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" style="width:32%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="--card-accent: #D97706">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(217,119,6,0.12), transparent 70%)" />
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(217,119,6,0.12); color:#D97706">
+              <Icon name="credit-card" size=20 />
+            </div>
+            <span class="dash-card-label">Deudas Pendientes</span>
+          </div>
+          <span class="dash-card-value" id="valDeudas">S/ {currentData.deudas.toLocaleString('es-PE')}</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change down" id="activeDebtCount">
+              <Icon name="trending-down" size=12 />
+              — deudas activas
+            </span>
+            <div class="dash-card-mini">
+              <span>Pend.</span><span>Pag.</span>
+              <div class="mini-bar"><div class="mini-fill" style="width:60%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" style="width:40%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart + Activity -->
+    <div class="dash-grid-2">
+      <div class="dash-section glass-card">
+        <div class="dash-section-head">
+          <div>
+            <h2 class="dash-section-title">Ingresos por Fuente</h2>
+            <p class="dash-section-desc">Comparativa Clínica vs Externo</p>
+          </div>
+          <div class="dash-filter-group">
+            <select class="dash-select" id="incomeFilter">
+              <option value="month">Este mes</option>
+              <option value="quarter">Último trimestre</option>
+              <option value="year">Este año</option>
+            </select>
+          </div>
+        </div>
+        <div id="incomeChartContainer">
+          <IncomeChart clinicIncome={currentData.clinica} externalIncome={currentData.externo} />
+        </div>
+      </div>
+
+      <div class="dash-section glass-card">
+        <div class="dash-section-head">
+          <div>
+            <h2 class="dash-section-title">Actividad Reciente</h2>
+            <p class="dash-section-desc">Últimos movimientos</p>
+          </div>
+          <a href="/gastos" class="dash-link">Ver todo</a>
+        </div>
+        <div class="activity-list" id="activityList">
+          <div class="activity-item">
+            <div class="activity-icon expense">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="activity-info">
+              <span class="activity-desc">Cargando actividad...</span>
+              <span class="activity-date">—</span>
+            </div>
+            <span class="activity-amount" style="color:var(--c-text-light)">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Access - replaces FAB -->
+    <div class="dash-section">
+      <div class="dash-section-head">
+        <div>
+          <h2 class="dash-section-title">Acceso Rápido</h2>
+          <p class="dash-section-desc">Atajos a las funciones principales</p>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <a href="/gastos" class="quick-card" style="--quick-accent: #0D9488">
+          <div class="quick-icon" style="background: rgba(13,148,136,0.12); color: #0D9488">
+            <Icon name="receipt" size={22} />
+          </div>
+          <span class="quick-label">Registrar Gasto</span>
+          <span class="quick-arrow">
+            <Icon name="arrow-right" size={16} />
+          </span>
+        </a>
+        <a href="/tratamiento" class="quick-card" style="--quick-accent: #8B5CF6">
+          <div class="quick-icon" style="background: rgba(139,92,246,0.12); color: #8B5CF6">
+            <Icon name="clipboard-list" size={22} />
+          </div>
+          <span class="quick-label">Nuevo Tratamiento</span>
+          <span class="quick-arrow">
+            <Icon name="arrow-right" size={16} />
+          </span>
+        </a>
+        <a href="/deudas" class="quick-card" style="--quick-accent: #D97706">
+          <div class="quick-icon" style="background: rgba(217,119,6,0.12); color: #D97706">
+            <Icon name="credit-card" size={22} />
+          </div>
+          <span class="quick-label">Ver Deudas</span>
+          <span class="quick-arrow">
+            <Icon name="arrow-right" size={16} />
+          </span>
+        </a>
+        <a href="/ajustes" class="quick-card" style="--quick-accent: #059669">
+          <div class="quick-icon" style="background: rgba(5,150,105,0.12); color: #059669">
+            <Icon name="settings" size={22} />
+          </div>
+          <span class="quick-label">Ajustes</span>
+          <span class="quick-arrow">
+            <Icon name="arrow-right" size={16} />
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  (function() {
+    const nameEl = document.getElementById('greetingName');
+    const name = localStorage.getItem('df_name');
+    if (name && nameEl) nameEl.textContent = name;
+
+    const dateEl = document.getElementById('greetingDate');
+    const greetingEl = document.getElementById('greetingText');
+    if (dateEl || greetingEl) {
+      const now = new Date();
+      const peru = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
+      const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      if (dateEl) {
+        dateEl.textContent = `${peru.getDate()} de ${months[peru.getMonth()]} ${peru.getFullYear()}`;
+      }
+      if (greetingEl) {
+        const h = peru.getHours();
+        greetingEl.textContent = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
+      }
+    }
+  })();
+
+  import { fetchAllMonthlyData } from '../lib/data';
+
+  const fallbackData = {
+    '0': { ganancia: 1500, gastos: 480, deudas: 850, clinica: 1050, externo: 450 },
+    '1': { ganancia: 1320, gastos: 510, deudas: 920, clinica: 920, externo: 400 },
+    '2': { ganancia: 1680, gastos: 440, deudas: 780, clinica: 1180, externo: 500 },
+    '3': { ganancia: 1450, gastos: 530, deudas: 820, clinica: 1000, externo: 450 },
+    '4': { ganancia: 1720, gastos: 460, deudas: 760, clinica: 1250, externo: 470 },
+    '5': { ganancia: 1580, gastos: 490, deudas: 810, clinica: 1100, externo: 480 },
+    '6': { ganancia: 1430, gastos: 520, deudas: 870, clinica: 980, externo: 450 },
+    '7': { ganancia: 1610, gastos: 470, deudas: 800, clinica: 1150, externo: 460 },
+    '8': { ganancia: 1550, gastos: 500, deudas: 830, clinica: 1080, externo: 470 },
+    '9': { ganancia: 1490, gastos: 485, deudas: 860, clinica: 1040, externo: 450 },
+    '10': { ganancia: 1630, gastos: 455, deudas: 790, clinica: 1160, externo: 470 },
+    '11': { ganancia: 1470, gastos: 505, deudas: 840, clinica: 1020, externo: 450 },
+  };
+  let monthlyData = { ...fallbackData };
+  for (const k in monthlyData) monthlyData[k] = { ...fallbackData[k] };
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Aggregate data for quarter
+  function getQuarterData(monthIdx) {
+    let c = 0, e = 0;
+    for (let i = 0; i <= monthIdx; i++) {
+      c += monthlyData[String(i)].clinica;
+      e += monthlyData[String(i)].externo;
+    }
+    return { clinica: c, externo: e };
+  }
+
+  function getYearData() {
+    let c = 0, e = 0;
+    for (let i = 0; i < 12; i++) {
+      c += monthlyData[String(i)].clinica;
+      e += monthlyData[String(i)].externo;
+    }
+    return { clinica: c, externo: e };
+  }
+
+  function updateDashboard(monthIdx) {
+    const data = monthlyData[String(monthIdx)];
+    const prevIdx = monthIdx === 0 ? 11 : monthIdx - 1;
+    const prevData = monthlyData[String(prevIdx)];
+
+    document.getElementById('valGanancia').textContent = 'S/ ' + data.ganancia.toLocaleString('es-PE');
+    document.getElementById('valGastos').textContent = 'S/ ' + data.gastos.toLocaleString('es-PE');
+    document.getElementById('valDeudas').textContent = 'S/ ' + data.deudas.toLocaleString('es-PE');
+    document.getElementById('activeDebtCount').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0l6.75 6.75M4.5 12l6.75-6.75"/></svg> ' + (data.deudaCount || 0) + ' deudas activas';
+
+    const gChange = prevData.ganancia > 0 ? ((data.ganancia - prevData.ganancia) / prevData.ganancia * 100) : 0;
+    const gastChange = prevData.gastos > 0 ? ((data.gastos - prevData.gastos) / prevData.gastos * 100) : 0;
+    const gUp = gChange >= 0;
+    const gastUp = gastChange >= 0;
+
+    const changeG = document.getElementById('changeGanancia');
+    changeG.textContent = (gUp ? '+' : '') + gChange.toFixed(0) + '% vs mes anterior';
+    changeG.className = 'dash-card-change ' + (gUp ? 'up' : 'down');
+
+    const changeGa = document.getElementById('changeGastos');
+    changeGa.textContent = (gastUp ? '+' : '') + gastChange.toFixed(0) + '% vs mes anterior';
+    changeGa.className = 'dash-card-change ' + (gastUp ? 'up' : 'down');
+
+    updateChart(monthIdx);
+  }
+
+  function updateChart(monthIdx) {
+    const filter = document.getElementById('incomeFilter').value;
+    let c, e;
+    if (filter === 'month') {
+      c = monthlyData[String(monthIdx)].clinica;
+      e = monthlyData[String(monthIdx)].externo;
+    } else if (filter === 'quarter') {
+      const q = getQuarterData(monthIdx);
+      c = q.clinica;
+      e = q.externo;
+    } else {
+      const y = getYearData();
+      c = y.clinica;
+      e = y.externo;
+    }
+    const total = c + e;
+    const cPct = total > 0 ? (c / total * 100) : 0;
+    const ePct = total > 0 ? (e / total * 100) : 0;
+
+    const container = document.getElementById('incomeChartContainer');
+    container.innerHTML = `
+      <div class="chart-widget">
+        <div class="chart-body" style="display:flex;flex-direction:column;gap:1.25rem;">
+          <div class="chart-bars" style="display:flex;flex-direction:column;gap:0.75rem;">
+            <div class="chart-bar-row" style="display:grid;grid-template-columns:minmax(60px,80px) 1fr minmax(60px,80px);align-items:center;gap:0.75rem;">
+              <div class="chart-bar-label" style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;font-weight:500;color:var(--c-text-secondary);">
+                <span class="bar-dot clinica" style="width:8px;height:8px;border-radius:50%;background:var(--c-chart-clinica);flex-shrink:0;"></span>
+                Clínica
+              </div>
+              <div class="chart-bar-track" style="height:22px;background:var(--c-chart-track);border-radius:11px;overflow:hidden;">
+                <div class="chart-bar-fill clinica" style="height:100%;border-radius:11px;display:flex;align-items:center;justify-content:flex-end;padding:0 0.5rem;background:linear-gradient(90deg,var(--c-chart-clinica),#14B8A6);min-width:fit-content;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);width:${cPct}%;">
+                  <span class="chart-bar-value" style="font-size:0.7rem;font-weight:600;color:white;">${cPct.toFixed(0)}%</span>
+                </div>
+              </div>
+              <span class="chart-bar-amount" style="font-size:0.85rem;font-weight:700;color:var(--c-text);text-align:right;">S/ ${c.toLocaleString('es-PE')}</span>
+            </div>
+            <div class="chart-bar-row" style="display:grid;grid-template-columns:minmax(60px,80px) 1fr minmax(60px,80px);align-items:center;gap:0.75rem;">
+              <div class="chart-bar-label" style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;font-weight:500;color:var(--c-text-secondary);">
+                <span class="bar-dot externo" style="width:8px;height:8px;border-radius:50%;background:var(--c-chart-externo);flex-shrink:0;"></span>
+                Externo
+              </div>
+              <div class="chart-bar-track" style="height:22px;background:var(--c-chart-track);border-radius:11px;overflow:hidden;">
+                <div class="chart-bar-fill externo" style="height:100%;border-radius:11px;display:flex;align-items:center;justify-content:flex-end;padding:0 0.5rem;background:linear-gradient(90deg,var(--c-chart-externo),#34D399);min-width:fit-content;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);width:${ePct}%;">
+                  <span class="chart-bar-value" style="font-size:0.7rem;font-weight:600;color:white;">${ePct.toFixed(0)}%</span>
+                </div>
+              </div>
+              <span class="chart-bar-amount" style="font-size:0.85rem;font-weight:700;color:var(--c-text);text-align:right;">S/ ${e.toLocaleString('es-PE')}</span>
+            </div>
+          </div>
+          <div style="height:1px;background:var(--c-border);"></div>
+          <div style="display:flex;justify-content:center;">
+            <div class="pie-ring" style="position:relative;width:130px;height:130px;">
+              <svg viewBox="0 0 100 100" style="width:100%;height:100%;">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="var(--c-chart-track)" stroke-width="12" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="var(--c-chart-clinica)" stroke-width="12" stroke-dasharray="${cPct * 2.39} 239" stroke-linecap="round" transform="rotate(-90 50 50)" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="var(--c-chart-externo)" stroke-width="12" stroke-dasharray="${ePct * 2.39} 239" stroke-dashoffset=${-cPct * 2.39} stroke-linecap="round" transform="rotate(-90 50 50)" />
+              </svg>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                <span style="display:block;font-size:1.15rem;font-weight:800;color:var(--c-text);letter-spacing:-0.02em;">S/ ${total.toLocaleString('es-PE')}</span>
+                <span style="font-size:0.7rem;color:var(--c-text-light);display:block;margin-top:0.05rem;">Total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const monthFilter = document.getElementById('monthFilter');
+    const incomeFilter = document.getElementById('incomeFilter');
+
+    const realData = await fetchAllMonthlyData();
+    if (realData && Object.keys(realData).length > 0) {
+      monthlyData = realData;
+    }
+
+    const currentMonth = parseInt(monthFilter?.value || String(new Date().getMonth()));
+    updateDashboard(currentMonth);
+    updateChart(currentMonth);
+
+    monthFilter.addEventListener('change', () => {
+      updateDashboard(parseInt(monthFilter.value));
+    });
+
+    incomeFilter.addEventListener('change', () => {
+      updateChart(parseInt(monthFilter.value));
+    });
+
+    // Real activity feed
+    loadActivity();
+  });
+
+  async function loadActivity() {
+    try {
+      const { databases, Query } = await import('../lib/appwrite');
+      const DATABASE_ID = import.meta.env.PUBLIC_APPWRITE_DATABASE_ID;
+      const EXPENSES_COLLECTION_ID = import.meta.env.PUBLIC_EXPENSES_COLLECTION_ID;
+      const TREATMENTS_COLLECTION_ID = import.meta.env.PUBLIC_TREATMENTS_COLLECTION_ID;
+      const [expRes, txRes] = await Promise.all([
+        databases.listDocuments(DATABASE_ID, EXPENSES_COLLECTION_ID, [Query.limit(5), Query.orderDesc('$createdAt')]),
+        databases.listDocuments(DATABASE_ID, TREATMENTS_COLLECTION_ID, [Query.limit(5), Query.orderDesc('$createdAt')]),
+      ]);
+      const items = [];
+      expRes.documents.forEach(e => {
+        items.push({
+          type: 'expense',
+          label: e.description || e.category || 'Gasto',
+          date: e.date || e.$createdAt,
+          amount: -(Number(e.amount) || 0),
+          patient: '',
+        });
+      });
+      txRes.documents.forEach(t => {
+        items.push({
+          type: 'treatment',
+          label: t.patient ? 'Tratamiento - ' + t.patient : 'Tratamiento',
+          date: t.date || t.$createdAt,
+          amount: Number(t.total) || 0,
+          patient: t.patient || '',
+        });
+      });
+      items.sort((a, b) => {
+        const da = new Date(a.date).getTime();
+        const db = new Date(b.date).getTime();
+        return isNaN(da) || isNaN(db) ? 0 : db - da;
+      });
+      const top = items.slice(0, 5);
+      const list = document.getElementById('activityList');
+      if (top.length === 0) {
+        list.innerHTML = '<div class="activity-item" style="justify-content:center;opacity:0.5;padding:1.5rem"><span class="activity-desc" style="font-size:0.8rem">Sin actividad reciente</span></div>';
+        return;
+      }
+      list.innerHTML = top.map(item => {
+        const isIncome = item.amount >= 0;
+        const icon = isIncome
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        const iconType = isIncome ? 'income' : 'expense';
+        const amtClass = isIncome ? 'positive' : 'negative';
+        const sign = isIncome ? '+S/ ' : '-S/ ';
+        const amountStr = sign + Math.abs(item.amount).toLocaleString('es-PE');
+        const dateStr = item.date ? (item.date.includes('T') ? item.date.split('T')[0] : item.date) : '—';
+        return `
+          <div class="activity-item">
+            <div class="activity-icon ${iconType}">${icon}</div>
+            <div class="activity-info">
+              <span class="activity-desc">${escHtml(item.label)}</span>
+              <span class="activity-date">${dateStr}</span>
+            </div>
+            <span class="activity-amount ${amtClass}">${amountStr}</span>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.warn('Error loading activity feed:', err);
+    }
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // 3D Tilt effect on cards
+  document.querySelectorAll('.dash-card, .greeting-card-3d').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = ((y - centerY) / centerY) * -8;
+      const rotateY = ((x - centerX) / centerX) * 8;
+      card.style.setProperty('--rx', rotateX + 'deg');
+      card.style.setProperty('--ry', rotateY + 'deg');
+      card.style.setProperty('--s', '1.02');
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.setProperty('--s', '1');
+    });
+  });
+
+  // --- Onboarding tour for first-time users ---
+  import { driver } from 'driver.js';
+  import 'driver.js/dist/driver.css';
+
+  const tourStyles = document.createElement('style');
+  tourStyles.textContent = `
+    .driver-popover { background: var(--c-glass,#1E293B); backdrop-filter: blur(20px); border: 1px solid var(--c-glass-border,rgba(255,255,255,0.08)); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 20px 22px; min-width: 280px; max-width: 340px; color: var(--c-text,#F1F5F9); }
+    .driver-popover * { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+    .driver-popover-title { font-size: 1rem; font-weight: 700; color: #F1F5F9; line-height: 1.4; padding-right: 28px; }
+    .driver-popover-description { font-size: 0.82rem; color: #94A3B8; line-height: 1.55; margin-top: 6px; }
+    .driver-popover-description strong { color: var(--c-primary-light,#2DD4BF); font-weight: 600; }
+    .driver-popover-footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .driver-popover-progress-text { font-size: 0.7rem; color: #64748B; font-weight: 500; }
+    .driver-popover-footer-btn { background: var(--c-primary,#0D9488); color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+    .driver-popover-footer-btn:hover { background: var(--c-primary-dark,#0F766E); }
+    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child { background: rgba(255,255,255,0.08); color: #CBD5E1; }
+    .driver-popover-navigation-btns .driver-popover-footer-btn:first-child:hover { background: rgba(255,255,255,0.12); }
+    .driver-popover-close-btn { color: #64748B; top: 4px; right: 6px; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .driver-popover-close-btn:hover { color: #F1F5F9; background: rgba(255,255,255,0.06); }
+    .driver-popover-arrow { border-color: var(--c-glass,#1E293B); }
+  `;
+  document.head.appendChild(tourStyles);
+
+  function startTour() {
+    function pick(sel) {
+      const el = document.querySelector(sel);
+      return el || undefined;
+    }
+
+    const steps = [
+      {
+        popover: {
+          title: 'Bienvenido a DentFinance',
+          description: 'Te guiaremos por el panel y las opciones del menú lateral para que empieces a gestionar tu clínica dental.',
+          showButtons: ['next'],
+        },
+      },
+      {
+        element: pick('.greeting-card-3d'),
+        popover: {
+          title: 'Panel principal',
+          description: 'Aquí ves tu saludo, la fecha y el filtro por mes. Desde aquí controlas todo tu negocio.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('#nav-ajustes'),
+        popover: {
+          title: 'Ajustes — Primero lo primero',
+          description: 'En el menú lateral, ve a <strong>Ajustes</strong> para configurar el nombre de tu clínica y agregar tus servicios con precios y colores.',
+          side: 'right',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('.dash-cards'),
+        popover: {
+          title: 'Resumen financiero',
+          description: 'Estas tarjetas muestran ganancia total, gastos del mes y deudas pendientes. Los datos cambian según el mes que selecciones.',
+          side: 'bottom',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('#nav-gastos'),
+        popover: {
+          title: 'Gastos',
+          description: 'Desde <strong>Gastos</strong> en el menú puedes registrar y controlar todos los gastos de tu clínica: materiales, alquiler, sueldos. Cada gasto puede llevar comprobante.',
+          side: 'right',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('.dash-grid-2'),
+        popover: {
+          title: 'Gráficos y actividad',
+          description: 'El gráfico compara ingresos entre Clínica y Externo. La actividad reciente muestra los últimos movimientos registrados.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('#nav-tratamiento'),
+        popover: {
+          title: 'Tratamientos',
+          description: 'En <strong>Tratamientos</strong> creas tratamientos dentales con un wizard de 3 pasos: datos del paciente, tipo de tratamiento, montos y comprobante.',
+          side: 'right',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('.dash-debt-card'),
+        popover: {
+          title: 'Control de deudas',
+          description: 'Esta tarjeta te muestra las deudas pendientes totales y cuántas están activas.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('#nav-deudas'),
+        popover: {
+          title: 'Deudas',
+          description: 'En <strong>Deudas</strong> controlas deudas de pacientes (Clínica) y proveedores (Externo). Marca como pagado, revisa vencidos y exporta a PDF.',
+          side: 'right',
+          align: 'center',
+        },
+      },
+      {
+        element: pick('.quick-grid'),
+        popover: {
+          title: 'Acceso rápido',
+          description: 'También puedes acceder a cada módulo desde estas tarjetas de acceso directo: Gastos, Tratamientos, Deudas y Ajustes.',
+          side: 'top',
+          align: 'center',
+        },
+      },
+      {
+        popover: {
+          title: 'Todo listo',
+          description: 'Ya conoces el dashboard y las opciones del menú lateral. Puedes volver a ver este tour desde <strong>Ajustes</strong>. ¡Empieza configurando tu clínica!',
+        },
+      },
+    ];
+
+    const tour = driver({
+      animate: true,
+      smoothScroll: true,
+      overlayColor: '#0F172A',
+      overlayOpacity: 0.75,
+      stagePadding: 8,
+      stageRadius: 10,
+      showProgress: true,
+      progressText: '{{current}} de {{total}}',
+      nextBtnText: 'Siguiente',
+      prevBtnText: 'Anterior',
+      doneBtnText: '¡Empezar!',
+      steps,
+      onDestroyed: () => {
+        localStorage.setItem('df_tour_complete', 'true');
+      },
+    });
+
+    tour.drive();
+  }
+
+  if (!localStorage.getItem('df_tour_complete')) {
+    setTimeout(startTour, 800);
+  }
+</script>
+
+<style is:global>
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .dash { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* Greeting 3D Card */
+  .greeting-card-3d {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--s, 1));
+    transform-style: preserve-3d;
+    transition: transform 0.3s;
+    animation: fadeUp 0.5s ease both;
+    cursor: default;
+  }
+  .greeting-card-3d:hover {
+    box-shadow: var(--shadow-xl);
+  }
+  .greeting-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0D9488 0%, #0F766E 30%, #0F172A 100%);
+    border-radius: var(--radius-xl);
+  }
+  .greeting-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(13,148,136,0.35), transparent 60%);
+    opacity: 0.6;
+    transition: opacity 0.3s;
+  }
+  .greeting-card-3d:hover .greeting-glow { opacity: 1; }
+
+  .greeting-content {
+    position: relative; z-index: 1;
+    padding: 1.5rem 1.75rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem;
+  }
+  .greeting-text { display: flex; flex-direction: column; gap: 0.35rem; }
+  .greeting-saludo {
+    font-size: 1.4rem;
+    color: rgba(255,255,255,0.95);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .greeting-saludo strong { font-weight: 700; }
+  .greeting-date {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+  }
+  .greeting-date svg { opacity: 0.7; }
+  .greeting-actions {
+    display: flex; align-items: center; gap: 1rem;
+    flex-shrink: 0;
+  }
+  .greeting-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* Month filter override for greeting card */
+  .greeting-card-3d .month-filter {
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(8px);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.9);
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s, border-color 0.2s;
+    min-width: 140px;
+  }
+  .greeting-card-3d .month-filter:hover {
+    background: rgba(255,255,255,0.16);
+    border-color: rgba(255,255,255,0.3);
+  }
+  .greeting-card-3d .month-filter option {
+    background: #1E293B;
+    color: #F1F5F9;
+  }
+
+  /* Cards */
+  .dash-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; animation: fadeUp 0.5s ease both; }
+  .dash-cards .dash-card:nth-child(1) { animation-delay: 0.1s; }
+  .dash-cards .dash-card:nth-child(2) { animation-delay: 0.15s; }
+  .dash-cards .dash-card:nth-child(3) { animation-delay: 0.2s; }
+
+  .dash-card {
+    position: relative; border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-md); transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid var(--c-glass-border);
+    transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--s, 1));
+    transform-style: preserve-3d;
+    cursor: default;
+  }
+  .dash-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-xl); }
+
+  .dash-card-bg {
+    position: absolute; inset: 0; background: var(--c-glass);
+    backdrop-filter: blur(12px); border-radius: var(--radius-lg);
+  }
+  .dash-card-glow {
+    position: absolute; inset: 0; opacity: 0.6;
+    transition: opacity 0.3s;
+  }
+  .dash-card:hover .dash-card-glow { opacity: 1; }
+
+  .dash-card-body { position: relative; z-index: 1; padding: 1.25rem; }
+  .dash-card-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
+  .dash-card-icon-wrap {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .dash-card-label { font-size: 0.78rem; font-weight: 500; color: var(--c-text-light); text-transform: uppercase; letter-spacing: 0.04em; }
+  .dash-card-value {
+    display: block; font-size: 1.65rem; font-weight: 800; color: var(--c-text);
+    letter-spacing: -0.03em; margin-bottom: 0.75rem;
+  }
+
+  .dash-card-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    padding-top: 0.65rem; border-top: 1px solid var(--c-border);
+  }
+  .dash-card-change {
+    display: flex; align-items: center; gap: 0.2rem;
+    font-size: 0.7rem; font-weight: 600;
+  }
+  .dash-card-change.up { color: #059669; }
+  .dash-card-change.down { color: #DC2626; }
+
+  .dash-card-mini {
+    display: grid; grid-template-columns: auto auto 20px 20px;
+    gap: 0.2rem 0.35rem; align-items: center;
+  }
+  .dash-card-mini span { font-size: 0.55rem; color: var(--c-text-light); font-weight: 500; }
+  .mini-bar { height: 4px; background: var(--c-chart-track); border-radius: 2px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 2px; background: var(--card-accent, var(--c-primary)); }
+
+  /* Filter group */
+  .dash-filter-group {
+    display: flex; gap: 0.5rem;
+  }
+  .dash-select {
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg);
+    backdrop-filter: blur(8px);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--c-text);
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s, border-color 0.2s;
+    min-width: 120px;
+  }
+  .dash-select:hover {
+    background: var(--c-btn-secondary-hover);
+    border-color: var(--c-glass-border-strong);
+  }
+  .dash-select option {
+    background: var(--c-surface);
+    color: var(--c-text);
+  }
+
+  /* Grid 2 columns */
+  .dash-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .glass-card {
+    background: var(--c-glass); backdrop-filter: blur(12px);
+    border: 1px solid var(--c-glass-border); border-radius: var(--radius-lg);
+    padding: 1.25rem; box-shadow: var(--shadow-md);
+  }
+  .dash-section-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 0.75rem; }
+  .dash-section-title { font-size: 1rem; font-weight: 600; color: var(--c-text); margin-bottom: 0.1rem; }
+  .dash-section-desc { font-size: 0.78rem; color: var(--c-text-light); }
+  .dash-link {
+    font-size: 0.78rem; font-weight: 600; color: var(--c-primary);
+    text-decoration: none; white-space: nowrap;
+  }
+  .dash-link:hover { text-decoration: underline; }
+
+  /* Activity */
+  .activity-list { display: flex; flex-direction: column; gap: 0.15rem; }
+  .activity-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.65rem 0.5rem; border-radius: 8px;
+    transition: background 0.15s; cursor: default;
+  }
+  .activity-item:hover { background: rgba(255,255,255,0.3); }
+  .activity-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .activity-icon.income { background: rgba(5,150,105,0.1); color: #059669; }
+  .activity-icon.expense { background: rgba(220,38,38,0.1); color: #DC2626; }
+  .activity-info { flex: 1; min-width: 0; }
+  .activity-desc { display: block; font-size: 0.82rem; font-weight: 500; color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .activity-date { display: block; font-size: 0.68rem; color: var(--c-text-light); margin-top: 0.05rem; }
+  .activity-amount { font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+  .activity-amount.positive { color: #059669; }
+  .activity-amount.negative { color: #DC2626; }
+
+  /* Quick Access */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.85rem;
+  }
+  .quick-card {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    padding: 1.25rem 1rem;
+    background: var(--c-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--c-glass-border);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .quick-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--quick-accent), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: var(--radius-lg);
+  }
+  .quick-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--quick-accent);
+  }
+  .quick-card:hover::before { opacity: 0.06; }
+  .quick-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.25s;
+    position: relative; z-index: 1;
+  }
+  .quick-card:hover .quick-icon { transform: scale(1.1); }
+  .quick-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    position: relative; z-index: 1;
+  }
+  .quick-arrow {
+    position: absolute;
+    top: 0.5rem; right: 0.65rem;
+    color: var(--c-text-light);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.25s;
+  }
+  .quick-card:hover .quick-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  @media (max-width: 1024px) {
+    .dash-grid-2 { grid-template-columns: 1fr; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .dash-cards { grid-template-columns: 1fr; }
+    .dash-card-mini { display: none; }
+    .greeting-content { flex-direction: column; align-items: flex-start; }
+    .greeting-actions { width: 100%; justify-content: space-between; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+    .quick-label { font-size: 0.75rem; }
+  }
+  @media (max-width: 480px) {
+    .greeting-card-3d { margin: 0 -0.75rem; border-radius: 0; }
+    .greeting-bg { border-radius: 0; }
+    .quick-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .quick-card { padding: 1rem 0.75rem; }
+  }
+</style>

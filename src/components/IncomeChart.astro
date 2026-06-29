@@ -1,0 +1,226 @@
+---
+interface Props {
+  clinicIncome: number;
+  externalIncome: number;
+}
+
+const { clinicIncome, externalIncome } = Astro.props;
+const totalIncome = clinicIncome + externalIncome;
+const clinicPercent = totalIncome > 0 ? (clinicIncome / totalIncome) * 100 : 0;
+const externalPercent = totalIncome > 0 ? (externalIncome / totalIncome) * 100 : 0;
+---
+
+<div class="chart-widget">
+  <div class="chart-header">
+    <div>
+      <h3 class="chart-title">Comparativo de Ingresos</h3>
+      <p class="chart-desc">Distribución por fuente</p>
+    </div>
+  </div>
+  <div class="chart-body">
+    <div class="chart-bars">
+      <div class="chart-bar-row">
+        <div class="chart-bar-label">
+          <span class="bar-dot clinica" />
+          Clinica
+        </div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill clinica" style={`width: ${clinicPercent}%`}>
+            <span class="chart-bar-value">{clinicPercent.toFixed(0)}%</span>
+          </div>
+        </div>
+        <span class="chart-bar-amount">S/ {clinicIncome.toLocaleString('es-PE')}</span>
+      </div>
+      <div class="chart-bar-row">
+        <div class="chart-bar-label">
+          <span class="bar-dot externo" />
+          Externo
+        </div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill externo" style={`width: ${externalPercent}%`}>
+            <span class="chart-bar-value">{externalPercent.toFixed(0)}%</span>
+          </div>
+        </div>
+        <span class="chart-bar-amount">S/ {externalIncome.toLocaleString('es-PE')}</span>
+      </div>
+    </div>
+
+    <div class="chart-divider" />
+
+    <div class="chart-pie">
+      <div class="pie-ring">
+        <svg viewBox="0 0 100 100" class="pie-svg">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="var(--c-chart-track)" stroke-width="12" />
+          <circle
+            cx="50" cy="50" r="38"
+            fill="none"
+            stroke="var(--c-chart-clinica)"
+            stroke-width="12"
+            stroke-dasharray={`${clinicPercent * 2.39} 239`}
+            stroke-linecap="round"
+            transform="rotate(-90 50 50)"
+          />
+          <circle
+            cx="50" cy="50" r="38"
+            fill="none"
+            stroke="var(--c-chart-externo)"
+            stroke-width="12"
+            stroke-dasharray={`${externalPercent * 2.39} 239`}
+            stroke-dashoffset={-clinicPercent * 2.39}
+            stroke-linecap="round"
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+        <div class="pie-center">
+          <span class="pie-total">S/ {totalIncome.toLocaleString('es-PE')}</span>
+          <span class="pie-total-label">Total</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .chart-widget {
+    width: 100%;
+  }
+
+  .chart-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-text);
+  }
+  .chart-desc {
+    font-size: 0.78rem;
+    color: var(--c-text-light);
+    margin-top: 0.1rem;
+  }
+
+  .chart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .chart-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .chart-bar-row {
+    display: grid;
+    grid-template-columns: minmax(60px, 80px) 1fr minmax(60px, 80px);
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .chart-bar-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--c-text-secondary);
+  }
+
+  .bar-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .bar-dot.clinica { background: var(--c-chart-clinica); }
+  .bar-dot.externo { background: var(--c-chart-externo); }
+
+  .chart-bar-track {
+    height: 22px;
+    background: var(--c-chart-track);
+    border-radius: 11px;
+    overflow: hidden;
+  }
+
+  .chart-bar-fill {
+    height: 100%;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 0.5rem;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-width: fit-content;
+  }
+  .chart-bar-fill.clinica { background: linear-gradient(90deg, var(--c-chart-clinica), #14B8A6); }
+  .chart-bar-fill.externo { background: linear-gradient(90deg, var(--c-chart-externo), #34D399); }
+
+  .chart-bar-value {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  .chart-bar-amount {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--c-text);
+    text-align: right;
+  }
+
+  .chart-divider {
+    height: 1px;
+    background: var(--c-border);
+  }
+
+  .chart-pie {
+    display: flex;
+    justify-content: center;
+  }
+
+  .pie-ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+  }
+
+  .pie-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .pie-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .pie-total {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+
+  .pie-total-label {
+    font-size: 0.7rem;
+    color: var(--c-text-light);
+    display: block;
+    margin-top: 0.05rem;
+  }
+
+  @media (min-width: 640px) {
+    .chart-body {
+      flex-direction: row;
+      align-items: center;
+    }
+    .chart-bars { flex: 1; }
+    .chart-divider { width: 1px; height: 120px; }
+    .chart-pie { flex-shrink: 0; }
+  }
+</style>

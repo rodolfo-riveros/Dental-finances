@@ -1,0 +1,289 @@
+<form class="register-form" id="registerForm" novalidate>
+  <div class="name-row">
+    <div class="form-group">
+      <label for="register-first-name" class="form-label">Nombre</label>
+      <input type="text" id="register-first-name" name="firstName" class="form-input" placeholder="Juan" />
+      <p class="error-message" id="reg-firstname-error" />
+    </div>
+    <div class="form-group">
+      <label for="register-last-name" class="form-label">Apellido</label>
+      <input type="text" id="register-last-name" name="lastName" class="form-input" placeholder="Pérez" />
+      <p class="error-message" id="reg-lastname-error" />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="register-email" class="form-label">Correo Electrónico</label>
+    <input type="email" id="register-email" name="email" class="form-input" placeholder="tu@email.com" />
+    <p class="error-message" id="reg-email-error" />
+  </div>
+
+  <div class="form-group">
+    <label for="register-password" class="form-label">Contraseña</label>
+    <input type="password" id="register-password" name="password" class="form-input" placeholder="••••••••" />
+    <p class="error-message" id="reg-password-error" />
+  </div>
+
+  <div class="form-group">
+    <label for="register-confirm-password" class="form-label">Confirmar Contraseña</label>
+    <input type="password" id="register-confirm-password" name="confirmPassword" class="form-input" placeholder="••••••••" />
+    <p class="error-message" id="reg-confirm-error" />
+  </div>
+
+  <div class="checkbox-group">
+    <label class="checkbox-container">
+      <input type="checkbox" name="acceptTerms" class="checkbox-input" />
+      <span class="checkbox-custom" />
+      <span class="checkbox-label">
+        Acepto los <a href="/terminos" class="terms-link" target="_blank">términos de servicio</a> y <a href="/privacidad" class="terms-link" target="_blank">política de privacidad</a>
+      </span>
+    </label>
+    <p class="error-message" id="reg-terms-error" />
+  </div>
+
+  <button type="submit" class="btn-primary w-full" id="register-submit">
+    Crear Cuenta
+  </button>
+
+</form>
+
+<script>
+  import { ID, account } from '../lib/appwrite';
+
+  const form = document.getElementById('registerForm');
+  const firstName = document.getElementById('register-first-name');
+  const lastName = document.getElementById('register-last-name');
+  const email = document.getElementById('register-email');
+  const password = document.getElementById('register-password');
+  const confirmPassword = document.getElementById('register-confirm-password');
+  const acceptTerms = document.querySelector('[name="acceptTerms"]');
+  const errFirst = document.getElementById('reg-firstname-error');
+  const errLast = document.getElementById('reg-lastname-error');
+  const errEmail = document.getElementById('reg-email-error');
+  const errPass = document.getElementById('reg-password-error');
+  const errConfirm = document.getElementById('reg-confirm-error');
+  const errTerms = document.getElementById('reg-terms-error');
+  const submitBtn = document.getElementById('register-submit');
+
+  const inputs = [firstName, lastName, email, password, confirmPassword];
+
+  function clearError(input) {
+    input.classList.remove('error');
+    const map = {
+      'register-first-name': errFirst,
+      'register-last-name': errLast,
+      'register-email': errEmail,
+      'register-password': errPass,
+      'register-confirm-password': errConfirm,
+    };
+    if (map[input.id]) map[input.id].textContent = '';
+  }
+
+  inputs.forEach(inp => inp.addEventListener('input', () => clearError(inp)));
+  acceptTerms.addEventListener('change', () => {
+    errTerms.textContent = '';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    let valid = true;
+
+    if (!firstName.value) {
+      firstName.classList.add('error');
+      errFirst.textContent = 'El nombre es requerido';
+      valid = false;
+    }
+
+    if (!lastName.value) {
+      lastName.classList.add('error');
+      errLast.textContent = 'El apellido es requerido';
+      valid = false;
+    }
+
+    if (!email.value) {
+      email.classList.add('error');
+      errEmail.textContent = 'El correo electrónico es requerido';
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+      email.classList.add('error');
+      errEmail.textContent = 'Por favor ingresa un correo electrónico válido';
+      valid = false;
+    }
+
+    if (!password.value) {
+      password.classList.add('error');
+      errPass.textContent = 'La contraseña es requerida';
+      valid = false;
+    } else if (password.value.length < 8) {
+      password.classList.add('error');
+      errPass.textContent = 'La contraseña debe tener al menos 8 caracteres';
+      valid = false;
+    }
+
+    if (password.value !== confirmPassword.value) {
+      confirmPassword.classList.add('error');
+      errConfirm.textContent = 'Las contraseñas no coinciden';
+      valid = false;
+    }
+
+    if (!acceptTerms.checked) {
+      errTerms.textContent = 'Debes aceptar los términos y condiciones';
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading-spinner"></span> Creando...';
+
+    try {
+      try { await account.deleteSession('current'); } catch (_) {}
+      const name = firstName.value + ' ' + lastName.value;
+      await account.create(ID.unique(), email.value, password.value, name);
+      await account.createEmailPasswordSession(email.value, password.value);
+      localStorage.setItem('df_logged', 'true');
+      localStorage.setItem('df_name', name);
+      localStorage.setItem('df_email', email.value);
+      window.location.href = '/dashboard';
+    } catch (err) {
+      console.error('Registration error:', err);
+      if (err.message?.includes('already exists')) {
+        errEmail.textContent = 'Este correo ya está registrado';
+        email.classList.add('error');
+      } else if (err.message?.includes('Missing password') || err.type === 'user_missing_password') {
+        errPass.textContent = 'Debes crear una contraseña';
+        password.classList.add('error');
+      } else {
+        errEmail.textContent = err.message || 'Error al crear la cuenta';
+        email.classList.add('error');
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Crear Cuenta';
+    }
+  });
+</script>
+
+<style>
+  .register-form { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
+
+  .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; min-width: 0; }
+  .name-row > * { min-width: 0; }
+
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-label { font-size: 0.8rem; font-weight: 600; color: var(--c-text); }
+  .form-input {
+    padding: 0.65rem 0.85rem;
+    border: 1.5px solid var(--c-glass-border);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.6);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--c-text);
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    outline: none;
+  }
+  .form-input:focus {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px var(--c-primary-glow);
+    transform: scale(1.02);
+  }
+  .form-input.error { border-color: var(--c-danger); }
+  .form-input.error:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+  .form-input::placeholder { color: #94A3B8; }
+
+  .error-message {
+    font-size: 0.75rem;
+    color: var(--c-danger);
+    min-height: 1em;
+    animation: slideDown 0.2s ease-out;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .checkbox-container:active { transform: scale(0.98); }
+  .checkbox-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .checkbox-custom {
+    width: 18px; height: 18px;
+    min-width: 18px;
+    margin-top: 1px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .checkbox-input:checked + .checkbox-custom {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+  }
+  .checkbox-input:checked + .checkbox-custom::after {
+    content: '';
+    width: 4px; height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+  }
+  .checkbox-label {
+    font-size: 0.8rem; color: var(--c-text); user-select: none;
+    flex: 1; line-height: 1.4; word-break: break-word;
+  }
+  .checkbox-container:hover .checkbox-custom { border-color: var(--c-primary); }
+  .terms-link { color: var(--c-primary); text-decoration: none; }
+  .terms-link:hover { text-decoration: underline; }
+
+  .checkbox-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .checkbox-container.secondary { margin-left: -0.1rem; }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.5rem;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    box-shadow: 0 4px 12px rgba(13,148,136,0.25);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(13,148,136,0.3);
+  }
+  .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .w-full { width: 100%; min-width: 180px; }
+
+  .loading-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .name-row { grid-template-columns: 1fr; }
+  }
+</style>

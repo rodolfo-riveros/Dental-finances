@@ -1,0 +1,1493 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const today = new Date();
+const currentMonth = today.getMonth();
+---
+
+<Layout title="Tratamientos - DentFinance">
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Pacientes y Tratamientos</h1>
+        <p class="page-subtitle">Gestión de pacientes, historial y nuevos tratamientos</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-label">Este mes</span>
+          <span class="stat-chip-value" id="statMonth">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Clínica</span>
+          <span class="stat-chip-value" id="statClinica">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Externo</span>
+          <span class="stat-chip-value" id="statExterno">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="glass-card form-section">
+        <div class="section-head">
+          <div class="section-head-icon">
+            <Icon name="plus" size={20} />
+          </div>
+          <div>
+            <h2 class="section-title" id="formTitle">Nuevo Tratamiento</h2>
+            <p class="section-desc" id="formDesc">Registra un nuevo tratamiento</p>
+          </div>
+        </div>
+
+        <form id="tx-form" class="tx-form" novalidate>
+          <!-- Step indicator -->
+          <div class="tx-steps">
+            <div class="tx-step active" data-step="1">
+              <span class="tx-step-num">1</span>
+              <span class="tx-step-label">Paciente</span>
+            </div>
+            <div class="tx-step-line"></div>
+            <div class="tx-step" data-step="2">
+              <span class="tx-step-num">2</span>
+              <span class="tx-step-label">Tratamiento</span>
+            </div>
+            <div class="tx-step-line"></div>
+            <div class="tx-step" data-step="3">
+              <span class="tx-step-num">3</span>
+              <span class="tx-step-label">Finanzas</span>
+            </div>
+          </div>
+
+          <!-- Paso 1: Ubicación y Paciente -->
+          <div class="tx-step-content" data-step="1">
+            <div class="form-group">
+              <label class="form-label">Ubicación del servicio</label>
+              <div class="radio-row">
+                <label class="radio-card">
+                  <input type="radio" name="source" value="Clínica" checked />
+                  <span class="radio-content">
+                    <Icon name="building" size={22} />
+                    <span class="radio-title">Clínica</span>
+                  </span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="source" value="Externo" />
+                  <span class="radio-content">
+                    <Icon name="map-pin" size={22} />
+                    <span class="radio-title">Fuera de Local</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="tx-date" class="form-label">Fecha</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><Icon name="calendar" size={16} /></span>
+                  <input type="date" id="tx-date" name="date" class="form-input" required />
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="tx-patient" class="form-label">Paciente</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><Icon name="user" size={16} /></span>
+                  <input type="text" id="tx-patient" name="patient" placeholder="Nombre del paciente" class="form-input" required />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 2: Tipo de Tratamiento -->
+          <div class="tx-step-content" data-step="2" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Tipo de Tratamiento</label>
+              <div class="tx-type-grid" id="txTypeGrid">
+                <label class="tx-type-card">
+                  <input type="radio" name="type" value="Otro" />
+                  <span class="tx-type-content">
+                    <Icon name="ellipsis" size={24} />
+                    <span>Otro</span>
+                  </span>
+                </label>
+              </div>
+              <div class="other-input-wrap" id="otherGroup" style="display:none">
+                <div class="input-wrap">
+                  <span class="input-icon"><Icon name="file-text" size={16} /></span>
+                  <input type="text" id="tx-other" name="otherType" placeholder="Especifica el tratamiento" class="form-input" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 3: Finanzas y Comprobante -->
+          <div class="tx-step-content" data-step="3" style="display:none">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="tx-total" class="form-label">Monto Total (S/)</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><Icon name="dollar-sign" size={16} /></span>
+                  <input type="number" id="tx-total" name="total" placeholder="0.00" step="0.01" min="0" class="form-input" required />
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="tx-paid" class="form-label">Monto Pagado (S/)</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><Icon name="check" size={16} /></span>
+                  <input type="number" id="tx-paid" name="paid" placeholder="0.00" step="0.01" min="0" class="form-input" required />
+                </div>
+              </div>
+            </div>
+            <div class="balance-display" id="balanceDisplay">Saldo Pendiente: <strong>S/ 0.00</strong></div>
+
+            <div class="form-group">
+              <label class="form-label">Gastos Asociados</label>
+              <div class="costs-row">
+                <div class="input-wrap flex-1">
+                  <span class="input-icon"><Icon name="beaker" size={16} /></span>
+                  <input type="number" id="cost-lab" name="costLab" placeholder="Lab." step="0.01" min="0" class="form-input" />
+                </div>
+                <div class="input-wrap flex-1">
+                  <span class="input-icon"><Icon name="wrench" size={16} /></span>
+                  <input type="number" id="cost-tech" name="costTech" placeholder="Téc." step="0.01" min="0" class="form-input" />
+                </div>
+                <div class="input-wrap flex-1">
+                  <span class="input-icon"><Icon name="ellipsis" size={16} /></span>
+                  <input type="number" id="cost-other" name="costOther" placeholder="Otros" step="0.01" min="0" class="form-input" />
+                </div>
+              </div>
+            </div>
+            <div class="costs-summary">
+              <span>Total Costos: <strong id="totalCosts">S/ 0.00</strong></span>
+              <span>Ganancia Estimada: <strong id="estimatedProfit" class="profit">S/ 0.00</strong></span>
+            </div>
+
+            <div class="form-divider" />
+
+            <div class="form-group">
+              <label class="form-label">Comprobante</label>
+              <div class="voucher-upload" id="voucher-area">
+                <input type="file" id="tx-voucher" name="voucher" accept="image/*,.pdf" capture="environment" class="voucher-input" />
+                <div class="voucher-content" id="txVoucherContent">
+                  <div class="voucher-icon-wrap">
+                    <Icon name="camera" class="voucher-icon" size={24} />
+                  </div>
+                  <span class="voucher-text">Subir Comprobante</span>
+                  <span class="voucher-subtext">Toca para abrir cámara o galería — JPG, PNG, PDF</span>
+                </div>
+                <img id="tx-voucher-preview" class="voucher-preview" alt="Vista previa" />
+                <button type="button" class="voucher-clear hidden" id="txVoucherClear">
+                  <Icon name="trash-2" size={14} />
+                  Eliminar comprobante
+                </button>
+              </div>
+            </div>
+              <div class="form-actions">
+              <button type="submit" class="btn-save" id="txSubmitBtn">
+                <Icon name="plus" size={18} />
+                Guardar Tratamiento
+              </button>
+              <button type="button" class="btn-cancel hidden" id="txCancelBtn">
+                <Icon name="x" size={18} />
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <div class="tx-step-nav">
+            <button type="button" class="btn-nav btn-prev" id="txPrevBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+              Anterior
+            </button>
+            <button type="button" class="btn-nav btn-next" id="txNextBtn">
+              Siguiente
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="glass-card history-section">
+        <div class="section-head">
+          <div class="section-head-icon" style="background: rgba(99,102,241,0.1); color: #6366F1;">
+            <Icon name="clipboard-list" size={20} />
+          </div>
+          <div class="section-head-text">
+            <h2 class="section-title">Historial de Tratamientos</h2>
+            <p class="section-desc" id="historialDesc">Todos los registros</p>
+          </div>
+          <select class="month-filter" id="txMonthFilter">
+            <option value="-1">Mostrar hoy</option>
+            {months.map((m, i) => (
+              <option value={i} selected={i === currentMonth}>{m}</option>
+            ))}
+            <option value="99">Ver todos</option>
+          </select>
+          <button class="pdf-btn" id="exportPdfBtn" title="Exportar PDF del mes">
+            <Icon name="file-text" size={16} />
+            PDF
+          </button>
+        </div>
+
+        <div class="tx-list" id="txList"></div>
+        <div class="tx-empty hidden" id="txEmpty">
+          <Icon name="clipboard-list" size={24} />
+          <span>No hay tratamientos para este filtro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div class="dtl-overlay hidden" id="txModal">
+    <div class="dtl-panel">
+      <div class="dtl-head">
+        <div class="dtl-head-left">
+          <div class="dtl-icon" style="background: rgba(99,102,241,0.1); color: #6366F1;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <div class="dtl-title">Detalle del Tratamiento</div>
+            <span class="dtl-badge" id="mType">Tipo</span>
+          </div>
+        </div>
+        <button class="dtl-close" id="txModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="dtl-body">
+        <div class="dtl-amount-row" style="background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.08);">
+          <span class="dtl-amount" style="color: #6366F1;" id="mTotal">S/ 0</span>
+          <span class="dtl-date" id="mDate">—</span>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Paciente</span>
+          <p class="dtl-desc" id="mPatient">—</p>
+        </div>
+
+        <div class="dtl-info-grid">
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Ubicación</span>
+            <span class="dtl-info-value" id="mSource">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Monto Pagado</span>
+            <span class="dtl-info-value" id="mPaid">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Saldo Pendiente</span>
+            <span class="dtl-info-value" id="mBalance">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Gastos Asociados</span>
+            <span class="dtl-info-value" id="mCosts">—</span>
+          </div>
+        </div>
+
+        <div class="dtl-voucher-box" id="mVoucherField" style="display:none">
+          <div class="dtl-voucher-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+            <span>Comprobante</span>
+          </div>
+          <div class="dtl-voucher-img-wrap">
+            <img id="mVoucherImg" class="dtl-voucher-img" alt="Comprobante" />
+            <span id="voucherError" class="dtl-voucher-err">No se pudo cargar la imagen</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print area (hidden on screen) -->
+  <div id="printArea" class="print-area"></div>
+</Layout>
+
+<script>
+  import { fetchTreatments, addTreatment, updateTreatment, deleteTreatmentWithVoucher, uploadVoucher, getVoucherPreview, fetchServices } from '../lib/data';
+
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let treatmentsData = [];
+  let currentFilter = -1;
+  let editingId = null;
+  let txPage = 1;
+  const PER_PAGE = 10;
+
+  function parseDate(dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return { day: d, month: m };
+    }
+    const dt = new Date(dateStr);
+    if (!isNaN(dt.getTime())) return { day: dt.getDate(), month: dt.getMonth() };
+    const sp = dateStr.split(' ');
+    const sd = parseInt(sp[0]);
+    const map = { 'ene':0,'feb':1,'mar':2,'abr':3,'may':4,'jun':5,'jul':6,'ago':7,'sep':8,'oct':9,'nov':10,'dic':11 };
+    return { day: sd, month: map[(sp[1]||'').toLowerCase().slice(0,3)] ?? 0 };
+  }
+
+  function formatDate(dateStr) {
+    const { day, month } = parseDate(dateStr);
+    return String(day).padStart(2,'0') + ' ' + months[month].slice(0,3);
+  }
+
+  const txList = document.getElementById('txList');
+  const txEmpty = document.getElementById('txEmpty');
+  const historialDesc = document.getElementById('historialDesc');
+  const monthFilter = document.getElementById('txMonthFilter');
+  const statMonth = document.getElementById('statMonth');
+  const statClinica = document.getElementById('statClinica');
+  const statExterno = document.getElementById('statExterno');
+  const modal = document.getElementById('txModal');
+  const modalClose = document.getElementById('txModalClose');
+  const form = document.getElementById('tx-form');
+  const submitBtn = document.getElementById('txSubmitBtn');
+  const cancelBtn = document.getElementById('txCancelBtn');
+  const formTitle = document.getElementById('formTitle');
+  const formDesc = document.getElementById('formDesc');
+  const mType = document.getElementById('mType');
+  const mPatient = document.getElementById('mPatient');
+  const mSource = document.getElementById('mSource');
+  const mTotal = document.getElementById('mTotal');
+  const mPaid = document.getElementById('mPaid');
+  const mBalance = document.getElementById('mBalance');
+  const mCosts = document.getElementById('mCosts');
+  const mDate = document.getElementById('mDate');
+  const mVoucherField = document.getElementById('mVoucherField');
+  const mVoucherImg = document.getElementById('mVoucherImg');
+  const exportBtn = document.getElementById('exportPdfBtn');
+
+  // Voucher upload
+  const voucherInput = document.getElementById('tx-voucher');
+  const previewImg = document.getElementById('tx-voucher-preview');
+  const voucherArea = document.getElementById('voucher-area');
+  const voucherContent = document.getElementById('txVoucherContent');
+  const voucherClear = document.getElementById('txVoucherClear');
+
+  voucherInput?.addEventListener('change', function(e) {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        if (previewImg) {
+          previewImg.src = evt.target?.result;
+          previewImg.classList.add('show');
+        }
+        if (voucherContent) voucherContent.classList.add('hidden');
+        if (voucherClear) voucherClear.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+      const text = voucherArea?.querySelector('.voucher-text');
+      if (text) text.textContent = file.name;
+    }
+  });
+
+  voucherClear?.addEventListener('click', function() {
+    if (voucherInput) voucherInput.value = '';
+    if (previewImg) { previewImg.classList.remove('show'); previewImg.src = ''; }
+    if (voucherContent) voucherContent.classList.remove('hidden');
+    if (voucherClear) voucherClear.classList.add('hidden');
+    const text = voucherArea?.querySelector('.voucher-text');
+    if (text) text.textContent = 'Subir Comprobante';
+  });
+
+  // Treatment type from services
+  let servicesMap = {};
+
+  async function loadServiceTypes() {
+    try {
+      const docs = await fetchServices();
+      servicesMap = {};
+      docs.forEach(d => {
+        servicesMap[d.title] = {
+          defaultTotal: Number(d.price) || 0,
+          defaultPaid: 0,
+          defaultCostLab: 0,
+          defaultCostTech: 0,
+          defaultCostOther: 0,
+        };
+      });
+      const grid = document.getElementById('txTypeGrid');
+      // Keep "Otro" as the last item
+      const otroLabel = grid.querySelector('.tx-type-card');
+      let html = '';
+      docs.forEach(d => {
+        html += `
+          <label class="tx-type-card">
+            <input type="radio" name="type" value="${escHtml(d.title)}" />
+            <span class="tx-type-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/></svg>
+              <span>${escHtml(d.title)}</span>
+            </span>
+          </label>
+        `;
+      });
+      grid.innerHTML = html + (otroLabel ? otroLabel.outerHTML : '');
+    } catch (err) {
+      console.warn('Error loading service types:', err);
+    }
+  }
+
+  function fillFromService(type) {
+    if (!type || type === 'Otro' || !servicesMap[type]) {
+      document.getElementById('tx-total').value = '';
+      document.getElementById('tx-paid').value = '';
+      document.getElementById('cost-lab').value = '';
+      document.getElementById('cost-tech').value = '';
+      document.getElementById('cost-other').value = '';
+      calcBalance();
+      calcCosts();
+      return;
+    }
+    const svc = servicesMap[type];
+    document.getElementById('tx-total').value = svc.defaultTotal || '';
+    document.getElementById('tx-paid').value = svc.defaultPaid || '';
+    document.getElementById('cost-lab').value = svc.defaultCostLab || '';
+    document.getElementById('cost-tech').value = svc.defaultCostTech || '';
+    document.getElementById('cost-other').value = svc.defaultCostOther || '';
+    calcBalance();
+    calcCosts();
+  }
+
+  document.querySelectorAll('[name="type"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isOther = r.value === 'Otro' && r.checked;
+      document.getElementById('otherGroup').style.display = isOther ? 'block' : 'none';
+      if (r.checked && !isOther) fillFromService(r.value);
+    });
+  });
+
+  // Balance calculator
+  const totalInput = document.getElementById('tx-total');
+  const paidInput = document.getElementById('tx-paid');
+  const balanceDisplay = document.getElementById('balanceDisplay');
+  function calcBalance() {
+    const t = parseFloat(totalInput.value) || 0;
+    const p = parseFloat(paidInput.value) || 0;
+    const b = t - p;
+    balanceDisplay.innerHTML = `Saldo Pendiente: <strong>S/ ${b.toFixed(2)}</strong>`;
+    balanceDisplay.style.color = b > 0 ? '#DC2626' : '#059669';
+  }
+  totalInput.addEventListener('input', calcBalance);
+  paidInput.addEventListener('input', calcBalance);
+
+  // Costs calculator
+  const costLab = document.getElementById('cost-lab');
+  const costTech = document.getElementById('cost-tech');
+  const costOther = document.getElementById('cost-other');
+  const totalCostsEl = document.getElementById('totalCosts');
+  const estimatedProfitEl = document.getElementById('estimatedProfit');
+  function calcCosts() {
+    const lab = parseFloat(costLab.value) || 0;
+    const tech = parseFloat(costTech.value) || 0;
+    const other = parseFloat(costOther.value) || 0;
+    const tc = lab + tech + other;
+    totalCostsEl.textContent = 'S/ ' + tc.toFixed(2);
+    const total = parseFloat(totalInput.value) || 0;
+    const profit = total - tc;
+    estimatedProfitEl.textContent = 'S/ ' + profit.toFixed(2);
+    estimatedProfitEl.style.color = profit >= 0 ? 'var(--c-success)' : 'var(--c-danger)';
+  }
+  costLab.addEventListener('input', calcCosts);
+  costTech.addEventListener('input', calcCosts);
+  costOther.addEventListener('input', calcCosts);
+
+  // Step navigation
+  let currentStep = 1;
+  const totalSteps = 3;
+  const stepContents = document.querySelectorAll('.tx-step-content');
+  const stepIndicators = document.querySelectorAll('.tx-step');
+  const prevBtn = document.getElementById('txPrevBtn');
+  const nextBtn = document.getElementById('txNextBtn');
+
+  function showStep(n) {
+    currentStep = n;
+    stepContents.forEach(el => { el.style.display = String(el.dataset.step) === String(n) ? '' : 'none'; });
+    stepIndicators.forEach(el => { el.classList.toggle('active', String(el.dataset.step) === String(n)); });
+    prevBtn.style.display = n === 1 ? 'none' : '';
+    nextBtn.style.display = n === totalSteps ? 'none' : '';
+    document.querySelector('.form-actions')?.classList.toggle('hidden', n !== totalSteps);
+  }
+
+  function validateStep(n) {
+    const content = document.querySelector(`.tx-step-content[data-step="${n}"]`);
+    if (!content) return true;
+    const required = content.querySelectorAll('[required]');
+    for (const el of required) {
+      if (!el.value || el.value.trim() === '') {
+        el.focus();
+        el.style.borderColor = '#DC2626';
+        setTimeout(() => el.style.borderColor = '', 2000);
+        window.showToast('Completa todos los campos obligatorios.', 'error');
+        return false;
+      }
+    }
+    if (n === 2) {
+      const typeRadios = document.querySelectorAll('[name="type"]');
+      if (![...typeRadios].some(r => r.checked)) {
+        window.showToast('Selecciona un tipo de tratamiento.', 'error');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  prevBtn?.addEventListener('click', function() {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
+
+  nextBtn?.addEventListener('click', function() {
+    if (validateStep(currentStep) && currentStep < totalSteps) showStep(currentStep + 1);
+  });
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderTreatments(filter) {
+    const now = new Date();
+    const filtered = treatmentsData.filter(t => {
+      const { day, month } = parseDate(t.date);
+      if (filter === -1) return day === now.getDate() && month === now.getMonth();
+      if (filter === 99) return true;
+      return month === filter;
+    });
+
+    const mesTotal = treatmentsData.reduce((s, t) => {
+      const { month } = parseDate(t.date);
+      return month === now.getMonth() ? s + t.total : s;
+    }, 0);
+    const mesClinica = treatmentsData.filter(t => {
+      const { month } = parseDate(t.date);
+      return month === now.getMonth() && t.source === 'Clínica';
+    }).length;
+    const mesExterno = treatmentsData.filter(t => {
+      const { month } = parseDate(t.date);
+      return month === now.getMonth() && t.source === 'Externo';
+    }).length;
+
+    if (filtered.length === 0) {
+      txList.innerHTML = '';
+      txList.classList.add('hidden');
+      txEmpty.classList.remove('hidden');
+      const label = filter === -1 ? 'hoy' : filter === 99 ? 'todos los registros' : months[filter];
+      historialDesc.textContent = `Sin tratamientos — ${label}`;
+      statMonth.textContent = filtered.length;
+      statClinica.textContent = mesClinica;
+      statExterno.textContent = mesExterno;
+      return;
+    }
+
+    txList.classList.remove('hidden');
+    txEmpty.classList.add('hidden');
+
+    const total = filtered.reduce((s, t) => s + t.total, 0);
+    statMonth.textContent = filtered.length;
+    statClinica.textContent = mesClinica;
+    statExterno.textContent = mesExterno;
+
+    const label = filter === -1 ? 'Hoy' : filter === 99 ? 'Todos' : months[filter];
+    historialDesc.textContent = label + ' — ' + filtered.length + ' tratamientos · S/ ' + total.toLocaleString();
+
+    const totalPages = Math.ceil(filtered.length / PER_PAGE);
+    if (txPage > totalPages) txPage = totalPages;
+    const start = (txPage - 1) * PER_PAGE;
+    const pageItems = filtered.slice(start, start + PER_PAGE);
+
+    txList.innerHTML = pageItems.map((t, i) => {
+      const formatted = formatDate(t.date);
+      return `
+        <div class="tx-card" data-id="${escHtml(String(t.id))}" style="animation-delay: ${i * 0.04}s">
+          <div class="tx-card-main">
+            <div class="expense-left">
+              <div class="tx-icon" style="background: ${t.source === 'Clínica' ? 'rgba(13,148,136,0.1)' : 'rgba(16,185,129,0.1)'}; color: ${t.source === 'Clínica' ? '#0D9488' : '#10B981'}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+              </div>
+              <div class="expense-info">
+                <span class="tx-patient">${escHtml(t.patient)}</span>
+                <div class="expense-meta">
+                  <span class="tx-type-badge">${escHtml(t.type)}</span>
+                  <span class="expense-sep">•</span>
+                  <span class="expense-date">${formatted}</span>
+                </div>
+              </div>
+            </div>
+            <span class="tx-source" style="background: ${t.source === 'Clínica' ? 'rgba(13,148,136,0.1)' : 'rgba(16,185,129,0.1)'}; color: ${t.source === 'Clínica' ? '#0D9488' : '#10B981'}">${t.source}</span>
+            <div class="expense-right">
+              <span class="tx-cost">S/ ${t.total.toLocaleString()}</span>
+              <div class="expense-actions">
+                <button class="expense-action-btn tx-edit-btn" aria-label="Editar" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+                </button>
+                <button class="expense-action-btn tx-delete-btn" aria-label="Eliminar" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (totalPages > 1) {
+      let pagHtml = '<div class="pagination">';
+      if (txPage > 1) pagHtml += `<button class="pag-btn" data-page="${txPage - 1}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg> Anterior</button>`;
+      for (let p = 1; p <= totalPages; p++) {
+        const active = p === txPage ? ' active' : '';
+        pagHtml += `<button class="pag-btn${active}" data-page="${p}">${p}</button>`;
+      }
+      if (txPage < totalPages) pagHtml += `<button class="pag-btn" data-page="${txPage + 1}">Siguiente <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg></button>`;
+      pagHtml += '</div>';
+      txList.insertAdjacentHTML('beforeend', pagHtml);
+    }
+  }
+
+  monthFilter.addEventListener('change', function() {
+    currentFilter = parseInt(this.value);
+    txPage = 1;
+    renderTreatments(currentFilter);
+  });
+
+  txList.addEventListener('click', async function(e) {
+    const pagBtn = e.target.closest('.pag-btn');
+    if (pagBtn) {
+      txPage = parseInt(pagBtn.dataset.page);
+      renderTreatments(currentFilter);
+      return;
+    }
+    const editBtn = e.target.closest('.tx-edit-btn');
+    if (editBtn) {
+      const card = editBtn.closest('.tx-card');
+      if (!card) return;
+      const treatment = treatmentsData.find(t => String(t.id) === card.dataset.id);
+      if (!treatment) return;
+      editingId = treatment.id;
+      document.querySelector('[name="source"][value="' + treatment.source + '"]').checked = true;
+      document.getElementById('tx-date').value = treatment.date;
+      document.getElementById('tx-patient').value = treatment.patient;
+      const typeRadio = document.querySelector('[name="type"][value="' + treatment.type + '"]');
+      if (typeRadio) {
+        typeRadio.checked = true;
+        document.getElementById('otherGroup').style.display = 'none';
+      } else {
+        document.querySelector('[name="type"][value="Otro"]').checked = true;
+        document.getElementById('otherGroup').style.display = 'block';
+        document.getElementById('tx-other').value = treatment.type;
+      }
+      document.getElementById('tx-total').value = treatment.total;
+      document.getElementById('tx-paid').value = treatment.paid;
+      document.getElementById('cost-lab').value = treatment.costLab || 0;
+      document.getElementById('cost-tech').value = treatment.costTech || 0;
+      document.getElementById('cost-other').value = treatment.costOther || 0;
+      calcBalance();
+      calcCosts();
+      submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg> Actualizar Tratamiento';
+      cancelBtn.classList.remove('hidden');
+      formTitle.textContent = 'Editar Tratamiento';
+      formDesc.textContent = 'Modifica los datos del tratamiento';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const deleteBtn = e.target.closest('.tx-delete-btn');
+    if (deleteBtn) {
+      const card = deleteBtn.closest('.tx-card');
+      if (card) handleDelete(card.dataset.id);
+      return;
+    }
+    const card = e.target.closest('.tx-card');
+    if (card) await openModal(card.dataset.id);
+  });
+
+  function resetForm() {
+    editingId = null;
+    form.reset();
+    document.getElementById('otherGroup').style.display = 'none';
+    if (previewImg) { previewImg.classList.remove('show'); previewImg.src = ''; }
+    if (voucherContent) voucherContent.classList.remove('hidden');
+    if (voucherClear) voucherClear.classList.add('hidden');
+    const text = voucherArea?.querySelector('.voucher-text');
+    if (text) text.textContent = 'Subir Comprobante';
+    if (voucherInput) voucherInput.value = '';
+    balanceDisplay.innerHTML = 'Saldo Pendiente: <strong>S/ 0.00</strong>';
+    balanceDisplay.style.color = '';
+    totalCostsEl.textContent = 'S/ 0.00';
+    estimatedProfitEl.textContent = 'S/ 0.00';
+    estimatedProfitEl.style.color = '';
+    submitBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg> Guardar Tratamiento';
+    cancelBtn.classList.add('hidden');
+    formTitle.textContent = 'Nuevo Tratamiento';
+    formDesc.textContent = 'Registra un nuevo tratamiento';
+  }
+
+  cancelBtn.addEventListener('click', function() {
+    resetForm();
+    document.dispatchEvent(new CustomEvent('cancel-tx-edit'));
+  });
+
+  document.addEventListener('cancel-tx-edit', function() {
+    editingId = null;
+  });
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const data = new FormData(this);
+    const type = data.get('type');
+    const finalType = type === 'Otro' ? (data.get('otherType') || 'Otro') : type;
+    const total = parseFloat(data.get('total'));
+    const paid = parseFloat(data.get('paid')) || 0;
+    const date = data.get('date');
+    const patient = data.get('patient');
+    if (!type || !total || !patient || !date) {
+      window.showToast('Completa todos los campos obligatorios.', 'error');
+      return;
+    }
+    const lab = parseFloat(data.get('costLab')) || 0;
+    const tech = parseFloat(data.get('costTech')) || 0;
+    const other = parseFloat(data.get('costOther')) || 0;
+    let file = voucherInput?.files?.[0] || null;
+
+    if (editingId) {
+      const event = new CustomEvent('update-treatment', {
+        detail: { id: editingId, patient, type: finalType, source: data.get('source') || 'Clínica', date, total, paid, costLab: lab, costTech: tech, costOther: other, file }
+      });
+      document.dispatchEvent(event);
+    } else {
+      const event = new CustomEvent('new-treatment', {
+        detail: { patient, type: finalType, source: data.get('source') || 'Clínica', date, total, paid, costLab: lab, costTech: tech, costOther: other, file }
+      });
+      document.dispatchEvent(event);
+    }
+    resetForm();
+  });
+
+  document.addEventListener('new-treatment', async function(e) {
+    const treatment = e.detail;
+    try {
+      let voucher = '';
+      if (treatment.file) {
+        try {
+          voucher = await uploadVoucher(treatment.file);
+        } catch (err) {
+          console.warn('Error uploading voucher, treatment will be saved without image:', err);
+        }
+      }
+      const balance = (treatment.total || 0) - (treatment.paid || 0);
+      const created = await addTreatment({
+        patient: treatment.patient,
+        type: treatment.type,
+        source: treatment.source,
+        date: treatment.date,
+        total: treatment.total,
+        paid: treatment.paid,
+        balance,
+        costLab: treatment.costLab,
+        costTech: treatment.costTech,
+        costOther: treatment.costOther,
+        voucher
+      });
+      treatment.id = created.$id;
+      treatment.voucher = voucher;
+      treatmentsData.unshift({ ...treatment });
+      renderTreatments(currentFilter);
+      window.showToast('Tratamiento registrado correctamente.', 'success');
+    } catch (err) {
+      console.error('Error saving treatment to Appwrite:', err);
+      window.showToast('Error al guardar el tratamiento.', 'error');
+    }
+  });
+
+  document.addEventListener('update-treatment', async function(e) {
+    const treatment = e.detail;
+    try {
+      const balance = (treatment.total || 0) - (treatment.paid || 0);
+      const updateData = {
+        patient: treatment.patient,
+        type: treatment.type,
+        source: treatment.source,
+        date: treatment.date,
+        total: treatment.total,
+        paid: treatment.paid,
+        balance,
+        costLab: treatment.costLab,
+        costTech: treatment.costTech,
+        costOther: treatment.costOther,
+      };
+      let voucher = '';
+      if (treatment.file) {
+        try {
+          voucher = await uploadVoucher(treatment.file);
+          updateData.voucher = voucher;
+        } catch (err) {
+          console.warn('Error uploading voucher:', err);
+        }
+      }
+      await updateTreatment(treatment.id, updateData);
+      const idx = treatmentsData.findIndex(t => String(t.id) === String(treatment.id));
+      if (idx >= 0) {
+        treatmentsData[idx] = { ...treatmentsData[idx], ...updateData, voucher: voucher || treatmentsData[idx].voucher };
+      }
+      editingId = null;
+      renderTreatments(currentFilter);
+      window.showToast('Tratamiento actualizado.', 'success');
+    } catch (err) {
+      console.error('Error updating treatment:', err);
+      window.showToast('Error al actualizar el tratamiento.', 'error');
+    }
+  });
+
+  async function handleDelete(id) {
+    const treatment = treatmentsData.find(t => String(t.id) === String(id));
+    if (!treatment) return;
+    const ok = await window.showConfirm('¿Eliminar este tratamiento?');
+    if (!ok) return;
+    try {
+      await deleteTreatmentWithVoucher(id, treatment.voucher);
+      treatmentsData = treatmentsData.filter(t => String(t.id) !== String(id));
+      renderTreatments(currentFilter);
+      window.showToast('Tratamiento eliminado.', 'success');
+    } catch (err) {
+      console.error('Error deleting treatment:', err);
+      window.showToast('Error al eliminar el tratamiento.', 'error');
+    }
+  }
+
+  async function openModal(id) {
+    const treatment = treatmentsData.find(t => String(t.id) === String(id));
+    if (!treatment) return;
+    mType.textContent = treatment.type;
+    mPatient.textContent = treatment.patient;
+    mSource.textContent = treatment.source;
+    mTotal.textContent = 'S/ ' + treatment.total.toLocaleString();
+    mPaid.textContent = 'S/ ' + (treatment.paid || 0).toLocaleString();
+    const balance = (treatment.total || 0) - (treatment.paid || 0);
+    mBalance.textContent = 'S/ ' + balance.toLocaleString();
+    mBalance.style.color = balance > 0 ? '#DC2626' : '#059669';
+    const { day, month } = parseDate(treatment.date);
+    mDate.textContent = String(day).padStart(2,'0') + ' de ' + months[month];
+    const costs = [];
+    if (treatment.costLab) costs.push('Lab: S/ ' + treatment.costLab);
+    if (treatment.costTech) costs.push('Téc: S/ ' + treatment.costTech);
+    if (treatment.costOther) costs.push('Otros: S/ ' + treatment.costOther);
+    mCosts.textContent = costs.length ? costs.join(' · ') : '—';
+
+    if (treatment.voucher && mVoucherField && mVoucherImg) {
+      mVoucherField.style.display = '';
+      const errEl = document.getElementById('voucherError');
+      try {
+        const url = getVoucherPreview(treatment.voucher);
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const blob = await resp.blob();
+        mVoucherImg.src = URL.createObjectURL(blob);
+        mVoucherImg.style.display = '';
+        if (errEl) errEl.style.display = 'none';
+      } catch (err) {
+        console.warn('Failed to load voucher image:', err);
+        mVoucherImg.style.display = 'none';
+        if (errEl) errEl.style.display = '';
+      }
+    } else if (mVoucherField) {
+      mVoucherField.style.display = 'none';
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('visible');
+  }
+
+  function closeModal() {
+    modal.classList.remove('visible');
+    modal.classList.add('hidden');
+  }
+
+  modalClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+
+  exportBtn.addEventListener('click', async function() {
+    const now = new Date();
+    const filter = currentFilter === -1 ? now.getMonth() : currentFilter === 99 ? -1 : currentFilter;
+    const filtered = filter === -1
+      ? [...treatmentsData]
+      : treatmentsData.filter(t => {
+          const { month } = parseDate(t.date);
+          return month === filter;
+        });
+    if (filtered.length === 0) {
+      window.showToast('No hay tratamientos para exportar.', 'info');
+      return;
+    }
+    const label = filter === -1 ? 'Todos los meses' : months[filter];
+    const total = filtered.reduce((s, t) => s + t.total, 0);
+
+    const rows = await Promise.all(filtered.map(async (t) => {
+      const formatted = formatDate(t.date);
+      const balance = (t.total || 0) - (t.paid || 0);
+      let imgHtml = '';
+      if (t.voucher) {
+        try {
+          const url = getVoucherPreview(t.voucher);
+          const resp = await fetch(url);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const dataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            imgHtml = `<img src="${dataUrl}" class="print-voucher" />`;
+          }
+        } catch (_) {}
+      }
+      return `<tr><td>${formatted}</td><td>${escHtml(t.patient)}</td><td>${escHtml(t.type)}</td><td>${t.source}</td><td style="text-align:right">S/ ${t.total.toLocaleString('es-PE')}</td><td style="text-align:right">S/ ${(t.paid || 0).toLocaleString('es-PE')}</td><td style="text-align:right">S/ ${balance.toLocaleString('es-PE')}</td><td>${imgHtml}</td></tr>`;
+    }));
+    const rowsHtml = rows.join('');
+
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = `
+      <div class="print-header">
+        <div class="print-brand">
+          <svg class="print-logo" viewBox="0 0 128 128" width="36" height="36"><rect width="128" height="128" rx="28" fill="#0D9488"/><path d="M64 28c-21 0-32 11-32 30 0 19 4 40 10 54 2 6 5 16 11 16 3 0 6-2 9-4l2-2 2 2c3 2 6 4 9 4 6 0 9-10 11-16 6-14 10-35 10-54 0-19-11-30-32-30z" fill="#fff"/><path d="M50 44c5-4 10-6 14-6s9 2 14 6" fill="none" stroke="#0D9488" stroke-width="4" stroke-linecap="round"/></svg>
+          <div>
+            <div class="print-brand-name">DentFinance</div>
+            <div class="print-brand-tag">Sistema de Gestión Dental</div>
+          </div>
+        </div>
+        <div class="print-title-block">
+          <h1 class="print-title">Reporte de Tratamientos</h1>
+          <p class="print-period">${label} · ${now.getFullYear()}</p>
+        </div>
+        <div class="print-meta">
+          <span>Generado: ${now.toLocaleDateString('es-PE', { year:'numeric', month:'long', day:'numeric' })}</span>
+          <span>${now.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' })}</span>
+        </div>
+      </div>
+      <div class="print-summary">
+        <div class="print-summary-item">
+          <span class="print-summary-label">Total Tratamientos</span>
+          <span class="print-summary-value">S/ ${total.toLocaleString('es-PE')}</span>
+        </div>
+        <div class="print-summary-item">
+          <span class="print-summary-label">Cantidad</span>
+          <span class="print-summary-value">${filtered.length} registros</span>
+        </div>
+        <div class="print-summary-item">
+          <span class="print-summary-label">Periodo</span>
+          <span class="print-summary-value">${label}</span>
+        </div>
+      </div>
+      <table class="print-table">
+        <thead><tr><th>Fecha</th><th>Paciente</th><th>Tratamiento</th><th>Ubicación</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Comprobante</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr><td colspan="4" style="text-align:right;font-weight:700;font-size:0.85rem">Total</td><td style="text-align:right;font-weight:700;font-size:0.85rem">S/ ${total.toLocaleString('es-PE')}</td><td></td><td></td><td></td></tr></tfoot>
+      </table>
+      <div class="print-footer">
+        <p>DentFinance © ${now.getFullYear()} — Reporte generado automáticamente</p>
+      </div>
+    `;
+    printArea.classList.add('print-active');
+    window.print();
+    setTimeout(() => {
+      printArea.classList.remove('print-active');
+      printArea.innerHTML = '';
+    }, 1000);
+  });
+
+  showStep(1);
+
+  async function init() {
+    try {
+      const docs = await fetchTreatments();
+      treatmentsData = docs.map(d => ({
+        id: d.$id,
+        patient: d.patient || '',
+        type: d.type || '',
+        source: d.source || 'Clínica',
+        date: d.date || d.$createdAt,
+        total: Number(d.total) || 0,
+        paid: Number(d.paid) || 0,
+        costLab: Number(d.costLab) || 0,
+        costTech: Number(d.costTech) || 0,
+        costOther: Number(d.costOther) || 0,
+        voucher: d.voucher || ''
+      }));
+    } catch (err) {
+      console.warn('No se pudieron cargar los tratamientos desde Appwrite:', err);
+    }
+    renderTreatments(-1);
+    loadServiceTypes();
+  }
+
+  init();
+</script>
+
+<style is:global>
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes dtlIn { from { opacity: 0; transform: scale(0.92) translateY(12px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+  .page { max-width: 1200px; margin: 0 auto; }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.75rem; flex-wrap: wrap; gap: 0.75rem;
+  }
+  .page-title { font-size: 1.5rem; font-weight: 700; color: var(--c-text); letter-spacing: -0.02em; line-height: 1.3; }
+  .page-subtitle { font-size: 0.85rem; color: var(--c-text-light); margin-top: 0.1rem; }
+
+  .page-header-stats { display: flex; gap: 0.5rem; }
+  .stat-chip {
+    padding: 0.4rem 0.75rem; background: var(--c-glass);
+    border: 1px solid var(--c-glass-border); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 0.05rem;
+  }
+  .stat-chip-label { font-size: 0.6rem; color: var(--c-text-light); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+  .stat-chip-value { font-size: 0.95rem; font-weight: 700; color: var(--c-text); }
+
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+
+  .glass-card {
+    background: var(--c-glass); backdrop-filter: blur(12px);
+    border: 1px solid var(--c-glass-border); border-radius: var(--radius-lg);
+    padding: 1.5rem; box-shadow: var(--shadow-md);
+  }
+
+  .section-head {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    margin-bottom: 1.25rem; padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .section-head-text { flex: 1; }
+  .section-head-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(13,148,136,0.1); color: var(--c-primary);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .section-title { font-size: 1rem; font-weight: 600; color: var(--c-text); }
+  .section-desc { font-size: 0.78rem; color: var(--c-text-light); margin-top: 0.05rem; }
+
+  .month-filter {
+    padding: 0.35rem 0.65rem; border-radius: 8px;
+    border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg);
+    font-family: var(--font-sans); font-size: 0.72rem;
+    color: var(--c-text); cursor: pointer; outline: none;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .month-filter:hover { background: var(--c-btn-secondary-hover); border-color: var(--c-glass-border-strong); }
+  .month-filter option { background: var(--c-surface); color: var(--c-text); }
+
+  /* Form */
+  .tx-form { display: flex; flex-direction: column; gap: 0.85rem; }
+  .form-row { display: flex; gap: 0.75rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .flex-1 { flex: 1; }
+  .form-label { font-size: 0.78rem; font-weight: 600; color: var(--c-text-secondary); }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-icon {
+    position: absolute; left: 0;
+    width: 2.25rem; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--c-text-light); pointer-events: none; opacity: 0.45;
+    border-right: 1px solid var(--c-input-border);
+    top: 0; flex-shrink: 0;
+  }
+  .input-icon svg { width: 16px; height: 16px; display: block; }
+  .form-input {
+    width: 100%; padding: 0.6rem 0.75rem 0.6rem 2.75rem;
+    border: 1.5px solid var(--c-input-border);
+    border-radius: var(--radius-md); font-size: 0.85rem;
+    background: var(--c-input-bg); color: var(--c-text);
+    transition: all 0.2s; font-family: var(--font-sans);
+    outline: none; line-height: 1.4;
+  }
+  .form-input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px var(--c-primary-glow); }
+  .form-input::placeholder { color: var(--c-input-placeholder); }
+  input[type="date"].form-input { color-scheme: light; cursor: pointer; }
+  [data-theme="dark"] input[type="date"].form-input { color-scheme: dark; }
+
+  .form-divider { height: 1px; background: var(--c-border); margin: 0.25rem 0; }
+
+  /* Step wizard */
+  .tx-steps { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+  .tx-step { display: flex; align-items: center; gap: 0.4rem; cursor: default; }
+  .tx-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+    background: var(--c-btn-secondary-bg); color: var(--c-text-light);
+    border: 2px solid var(--c-glass-border);
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .tx-step.active .tx-step-num { background: var(--c-primary); color: white; border-color: var(--c-primary); }
+  .tx-step-label { font-size: 0.72rem; font-weight: 600; color: var(--c-text-light); white-space: nowrap; }
+  .tx-step.active .tx-step-label { color: var(--c-text); }
+  .tx-step-line { flex: 1; height: 2px; background: var(--c-glass-border); min-width: 12px; }
+
+  .tx-step-content { animation: fadeSlide 0.25s ease both; }
+  .tx-step-content[data-step]:not([style*="display:none"]) { display: flex; flex-direction: column; gap: 0.85rem; }
+
+  .tx-step-nav { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.5rem; }
+  .btn-nav {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.55rem 1.1rem; border-radius: var(--radius-md);
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    font-family: var(--font-sans); border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg); color: var(--c-text);
+    transition: all 0.2s;
+  }
+  .btn-nav:hover { background: var(--c-btn-secondary-hover); border-color: var(--c-glass-border-strong); }
+  .btn-next { background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark)); color: white; border: none; }
+  .btn-next:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(13,148,136,0.35); }
+
+  /* Radio cards (location) */
+  .radio-row { display: flex; gap: 0.6rem; }
+  .radio-card {
+    flex: 1; border: 2px solid var(--c-glass-border); border-radius: var(--radius-md);
+    padding: 0.85rem; cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    background: var(--c-card-bg);
+  }
+  .radio-card:hover { border-color: var(--c-primary); }
+  .radio-card input[type="radio"] { display: none; }
+  .radio-card input[type="radio"]:checked + .radio-content { color: var(--c-primary); }
+  .radio-card:has(input:checked) { border-color: var(--c-primary); background: rgba(13,148,136,0.05); }
+  .radio-content { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .radio-content svg { opacity: 0.6; }
+  .radio-card:has(input:checked) .radio-content svg { opacity: 1; color: var(--c-primary); }
+  .radio-title { font-weight: 600; font-size: 0.8rem; color: var(--c-text); }
+  .radio-card:has(input:checked) .radio-title { color: var(--c-primary); }
+
+  /* Treatment type cards */
+  .tx-type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .tx-type-card {
+    border: 2px solid var(--c-glass-border); border-radius: var(--radius-md);
+    cursor: pointer; transition: all 0.2s; overflow: hidden;
+  }
+  .tx-type-card:hover { border-color: var(--c-primary); }
+  .tx-type-card input[type="radio"] { display: none; }
+  .tx-type-card:has(input:checked) { border-color: var(--c-primary); background: rgba(13,148,136,0.05); }
+  .tx-type-content {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 0.85rem; text-align: center;
+    font-size: 0.8rem; font-weight: 600; color: var(--c-text);
+  }
+  .tx-type-content svg { opacity: 0.5; }
+  .tx-type-card:has(input:checked) .tx-type-content svg { opacity: 1; color: var(--c-primary); }
+  .tx-type-card:has(input:checked) .tx-type-content { color: var(--c-primary); }
+
+  .other-input-wrap { margin-top: 0.35rem; }
+
+  /* Balance & Costs display */
+  .balance-display {
+    font-size: 0.88rem; font-weight: 500; padding: 0.5rem 0.75rem;
+    background: var(--c-card-bg); border-radius: var(--radius-md);
+    text-align: center; color: #DC2626;
+  }
+  .balance-display strong { font-weight: 800; }
+
+  .costs-row { display: flex; gap: 0.5rem; }
+  .costs-row .input-wrap { flex: 1; }
+
+  .costs-summary {
+    display: flex; flex-direction: column; gap: 0.2rem;
+    padding: 0.65rem 0.75rem; background: var(--c-card-bg);
+    border-radius: var(--radius-md); font-size: 0.8rem;
+  }
+  .costs-summary span { display: flex; justify-content: space-between; }
+  .profit { color: var(--c-success); }
+
+  .btn-save {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+    color: white; padding: 0.7rem 1.25rem; border-radius: var(--radius-md);
+    font-weight: 600; font-size: 0.88rem; border: none; cursor: pointer;
+    transition: all 0.2s; font-family: var(--font-sans);
+  }
+  .btn-save:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(13,148,136,0.35); }
+
+  .form-actions { display: flex; gap: 0.5rem; }
+
+  .btn-cancel {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: var(--c-btn-secondary-bg); color: var(--c-text);
+    padding: 0.7rem 1.25rem; border-radius: var(--radius-md);
+    font-weight: 600; font-size: 0.88rem; border: 1px solid var(--c-glass-border); cursor: pointer;
+    transition: all 0.2s; font-family: var(--font-sans);
+  }
+  .btn-cancel:hover { background: var(--c-btn-secondary-hover); }
+
+  /* Voucher upload */
+  .voucher-upload {
+    position: relative; border: 2px dashed var(--c-input-border);
+    border-radius: var(--radius-md); padding: 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--c-card-bg);
+  }
+  .voucher-upload:hover { border-color: var(--c-primary); background: var(--c-card-hover-bg); }
+  .voucher-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .voucher-content { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .voucher-icon-wrap {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(13,148,136,0.1); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .voucher-icon { width: 24px; height: 24px; color: var(--c-primary); }
+  .voucher-text { font-size: 0.9rem; font-weight: 600; color: var(--c-text); }
+  .voucher-subtext { font-size: 0.7rem; color: var(--c-text-light); }
+  .voucher-preview { display: none; max-width: 100%; max-height: 180px; margin: 0.75rem auto 0; border-radius: 8px; box-shadow: var(--shadow-sm); }
+  .voucher-preview.show { display: block; }
+  .voucher-clear {
+    margin-top: 0.5rem; padding: 0.35rem 0.75rem;
+    background: rgba(239,68,68,0.08); color: var(--c-danger);
+    border: 1px solid rgba(239,68,68,0.12); border-radius: 6px;
+    font-size: 0.72rem; font-weight: 500; cursor: pointer;
+    font-family: var(--font-sans); transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+  }
+  .voucher-clear:hover { background: rgba(239,68,68,0.15); }
+  .hidden { display: none !important; }
+
+  /* Treatment list */
+  .tx-list { display: flex; flex-direction: column; gap: 0.35rem; }
+  .tx-card {
+    border: 1px solid var(--c-glass-border); border-radius: var(--radius-md);
+    background: var(--c-card-bg);
+    animation: fadeSlide 0.4s ease both;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .tx-card:hover { box-shadow: var(--shadow-sm); border-color: var(--c-glass-border-strong); }
+
+  .tx-card-main {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+  }
+  .tx-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .tx-patient { display: block; font-weight: 600; font-size: 0.85rem; color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-type-badge { font-size: 0.65rem; background: rgba(99,102,241,0.08); color: #6366F1; padding: 0.1rem 0.45rem; border-radius: 20px; font-weight: 500; }
+  .tx-source { font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 600; flex-shrink: 0; }
+  .tx-cost { font-size: 0.95rem; font-weight: 700; color: var(--c-text); white-space: nowrap; }
+
+  .tx-empty {
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    padding: 2rem; color: var(--c-text-light); text-align: center;
+  }
+  .tx-empty svg { opacity: 0.3; width: 32px; height: 32px; }
+  .tx-empty span { font-size: 0.85rem; }
+  .tx-empty.hidden, .tx-list.hidden { display: none; }
+
+  /* Shared expense-left/right/meta/actions from gastos page */
+  .expense-left { display: flex; align-items: center; gap: 0.7rem; min-width: 0; flex: 1; }
+  .expense-info { min-width: 0; flex: 1; }
+  .expense-meta { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.1rem; }
+  .expense-sep { font-size: 0.6rem; color: var(--c-text-light); }
+  .expense-date { font-size: 0.68rem; color: var(--c-text-light); }
+  .expense-right { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }
+  .expense-actions { display: flex; gap: 0.15rem; margin-left: 0.2rem; }
+  .expense-action-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--c-text-light);
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .tx-edit-btn:hover { background: var(--c-card-hover-bg); color: #6366F1; }
+  .tx-delete-btn:hover { background: var(--c-card-hover-bg); color: #DC2626; }
+
+  .pdf-btn {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.35rem 0.65rem; border-radius: 8px;
+    border: 1px solid var(--c-glass-border);
+    background: rgba(239,68,68,0.08); color: #DC2626;
+    font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  }
+  .pdf-btn:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+    margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--c-border);
+  }
+  .pag-btn {
+    padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--c-glass-border);
+    background: var(--c-btn-secondary-bg); color: var(--c-text);
+    font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.25rem;
+  }
+  .pag-btn:hover { background: var(--c-btn-secondary-hover); border-color: var(--c-glass-border-strong); }
+  .pag-btn.active { background: var(--c-primary); color: white; border-color: var(--c-primary); }
+  .pag-btn svg { width: 14px; height: 14px; }
+
+  /* Modal detail */
+  .dtl-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .dtl-overlay.visible { opacity: 1; pointer-events: auto; }
+  .dtl-overlay.hidden { display: none; }
+  .dtl-overlay.visible.hidden { display: flex; }
+
+  .dtl-panel {
+    background: var(--c-surface);
+    border: 1px solid var(--c-glass-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    width: 100%; max-width: 440px;
+    animation: dtlIn 0.25s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden;
+  }
+
+  .dtl-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.125rem 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .dtl-head-left { display: flex; align-items: center; gap: 0.75rem; }
+  .dtl-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dtl-title { font-size: 1rem; font-weight: 700; color: var(--c-text); line-height: 1.3; }
+  .dtl-badge {
+    display: inline-block; font-size: 0.65rem; font-weight: 600;
+    background: rgba(13,148,136,0.1); color: var(--c-primary);
+    padding: 0.15rem 0.5rem; border-radius: 20px; margin-top: 0.1rem;
+  }
+  .dtl-close {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--c-text-light);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .dtl-close:hover { background: var(--c-card-hover-bg); color: var(--c-text); }
+
+  .dtl-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .dtl-amount-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(99,102,241,0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(99,102,241,0.08);
+  }
+  .dtl-amount { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+  .dtl-date { font-size: 0.78rem; color: var(--c-text-light); font-weight: 500; }
+
+  .dtl-desc-box {
+    padding: 0.85rem 1rem;
+    background: var(--c-card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--c-glass-border);
+  }
+  .dtl-desc-label {
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--c-text-light); margin-bottom: 0.3rem; display: block;
+  }
+  .dtl-desc { font-size: 0.92rem; color: var(--c-text); margin: 0; line-height: 1.5; }
+
+  .dtl-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
+  }
+  .dtl-info-item {
+    padding: 0.6rem 0.75rem;
+    background: var(--c-card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--c-glass-border);
+    display: flex; flex-direction: column; gap: 0.15rem;
+  }
+  .dtl-info-label {
+    font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--c-text-light);
+  }
+  .dtl-info-value { font-size: 0.82rem; font-weight: 600; color: var(--c-text); }
+
+  .dtl-voucher-box {
+    border: 1px solid var(--c-glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .dtl-voucher-header {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: var(--c-card-bg);
+    border-bottom: 1px solid var(--c-glass-border);
+    font-size: 0.72rem; font-weight: 600; color: var(--c-text-light); text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .dtl-voucher-img-wrap { padding: 0.75rem; background: var(--c-card-bg); }
+  .dtl-voucher-img {
+    display: block; max-width: 100%; max-height: 220px;
+    border-radius: 8px; margin: 0 auto;
+    box-shadow: var(--shadow-sm); object-fit: contain;
+  }
+  .dtl-voucher-err {
+    display: none; font-size: 0.78rem; color: var(--c-text-light);
+    text-align: center; padding: 1rem;
+  }
+
+  /* Print */
+  .print-area { display: none; }
+  .print-area.print-active { display: block; }
+
+  @media print {
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 2rem 2.5rem; display: block; box-sizing: border-box; }
+
+    .print-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #0D9488; }
+    .print-brand { display: flex; align-items: center; gap: 0.6rem; }
+    .print-logo { width: 36px; height: 36px; }
+    .print-brand-name { font-size: 1.2rem; font-weight: 800; color: #0D9488; line-height: 1.2; }
+    .print-brand-tag { font-size: 0.65rem; color: #94A3B8; }
+    .print-title-block { text-align: center; }
+    .print-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: #1E293B; }
+    .print-period { font-size: 0.75rem; color: #64748B; margin: 0.15rem 0 0; }
+    .print-meta { text-align: right; font-size: 0.65rem; color: #94A3B8; line-height: 1.5; }
+
+    .print-summary { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .print-summary-item { flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.6rem 0.8rem; text-align: center; }
+    .print-summary-label { display: block; font-size: 0.6rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.05em; }
+    .print-summary-value { display: block; font-size: 0.95rem; font-weight: 700; color: #0F172A; margin-top: 0.15rem; }
+
+    .print-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+    .print-table th { background: #0D9488; color: white; padding: 0.5rem 0.6rem; text-align: left; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .print-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #E2E8F0; color: #1E293B; }
+    .print-table tbody tr:nth-child(even) { background: #F8FAFC; }
+    .print-table tfoot td { border-top: 2px solid #0D9488; padding-top: 0.5rem; }
+
+    .print-voucher { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #E2E8F0; display: block; }
+
+    .print-footer { margin-top: 1.5rem; padding-top: 0.75rem; border-top: 1px solid #E2E8F0; text-align: center; }
+    .print-footer p { font-size: 0.6rem; color: #94A3B8; margin: 0; }
+  }
+
+  @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) {
+    .page-header { flex-direction: column; }
+    .form-row { flex-direction: column; }
+    .section-head { flex-wrap: wrap; }
+    .costs-row { flex-direction: column; }
+    .radio-row { flex-direction: column; }
+    .dtl-info-grid { grid-template-columns: 1fr; }
+    .tx-type-grid { grid-template-columns: 1fr; }
+    .tx-steps { gap: 0.25rem; font-size: 0.65rem; overflow-x: auto; }
+    .tx-step span { display: none; }
+    .tx-step.active span, .tx-step.completed span { display: inline; }
+  }
+</style>
