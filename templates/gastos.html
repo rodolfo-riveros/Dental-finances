@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static icons %}
+{% block title %}Registro de Gastos - DentFinance{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/gastos.css' %}" /><link rel="stylesheet" href="{% static 'css/expense_form.css' %}" />{% endblock %}
+{% block content %}
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Registro de Gastos</h1>
+        <p class="page-subtitle">Gestiona y registra tus gastos operativos</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-label">Hoy</span>
+          <span class="stat-chip-value" id="statHoy">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Este mes</span>
+          <span class="stat-chip-value" id="totalMes">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Registros</span>
+          <span class="stat-chip-value" id="countRegistros">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="gastos-layout">
+      <div class="glass-card form-section">
+        <div class="section-head">
+          <div class="section-head-icon">
+            {% icon "plus" 20 %}
+          </div>
+          <div>
+            <h2 class="section-title">Nuevo Gasto</h2>
+            <p class="section-desc">Completa los campos para registrar un gasto</p>
+          </div>
+        </div>
+        {% include "includes/expense_form.html" %}
+      </div>
+
+      <div class="glass-card history-section">
+        <div class="section-head">
+          <div class="section-head-icon" style="background: rgba(99,102,241,0.1); color: #6366F1;">
+            {% icon "clipboard-list" 20 %}
+          </div>
+          <div class="section-head-text">
+            <h2 class="section-title">Historial de Gastos</h2>
+            <p class="section-desc" id="historialDesc">Mostrando gastos de hoy</p>
+          </div>
+          <select class="month-filter" id="gastosMonthFilter">
+            <option value="-1">Mostrar hoy</option>
+            {% for m in months %}<option value="{{ forloop.counter0 }}"{% if forloop.counter0 == current_month %} selected{% endif %}>{{ m }}</option>{% endfor %}
+            <option value="99">Ver todos</option>
+          </select>
+          <button class="pdf-btn" id="exportPdfBtn" title="Exportar PDF del mes">
+            {% icon "file-text" 16 %}
+            PDF
+          </button>
+        </div>
+
+        <div class="expenses-list" id="expensesList"></div>
+        <div class="expenses-empty hidden" id="expensesEmpty">
+          {% icon "receipt" 24 %}
+          <span>No hay gastos registrados hoy</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div class="dtl-overlay hidden" id="detailModal">
+    <div class="dtl-panel">
+      <div class="dtl-head">
+        <div class="dtl-head-left">
+          <div class="dtl-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <div class="dtl-title">Detalle del Gasto</div>
+            <span class="dtl-badge" id="mCat">Categoría</span>
+          </div>
+        </div>
+        <button class="dtl-close" id="modalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="dtl-body">
+        <div class="dtl-amount-row">
+          <span class="dtl-amount" id="mAmount">S/ 0</span>
+          <span class="dtl-date" id="mDate">—</span>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Descripción</span>
+          <p class="dtl-desc" id="mDesc">—</p>
+        </div>
+
+        <div class="dtl-voucher-box" id="mVoucherField" style="display:none">
+          <div class="dtl-voucher-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+            <span>Comprobante</span>
+          </div>
+          <div class="dtl-voucher-img-wrap">
+            <img id="mVoucherImg" class="dtl-voucher-img" alt="Comprobante" />
+            <span id="voucherError" class="dtl-voucher-err">No se pudo cargar la imagen</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print area (hidden on screen) -->
+  <div id="printArea" class="print-area"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'js/gastos.js' %}"></script>{% endblock %}

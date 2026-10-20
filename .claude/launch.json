@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "django",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["manage.py", "runserver", "127.0.0.1:8000", "--noreload"],
+      "port": 8000
+    },
+    {
+      "name": "django-pruebas",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set DJANGO_SQLITE_PATH=%TEMP%\\dentfinance-pruebas.sqlite3&& set DJANGO_MEDIA_ROOT=%TEMP%\\dentfinance-pruebas-media&& .venv\\Scripts\\python.exe manage.py migrate --no-input -v0 && .venv\\Scripts\\python.exe manage.py runserver 127.0.0.1:8001 --noreload"],
+      "port": 8001
+    }
+  ]
+}

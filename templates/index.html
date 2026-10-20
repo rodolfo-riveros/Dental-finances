@@ -1,0 +1,67 @@
+{% load static icons %}<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="DentFinance - Gestión Financiera para Clínicas Dentales" />
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>DentFinance - Iniciar Sesión</title>
+    <script>
+      (function () {
+        var t = localStorage.getItem('df_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/login_form.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/register_form.css' %}" />
+  </head>
+  <body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+      {% icon "sun" 20 "theme-icon-sun" %}
+      {% icon "moon" 20 "theme-icon-moon" %}
+    </button>
+
+    <div class="auth-page">
+      <div class="auth-bg">
+        <div class="auth-orb auth-orb-1"></div>
+        <div class="auth-orb auth-orb-2"></div>
+        <div class="auth-orb auth-orb-3"></div>
+      </div>
+
+      <div class="auth-container">
+        <div class="auth-brand">
+          <div class="auth-brand-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 0-6 2-6 5.5 0 3.5.8 7.5 1.8 10 .5 1.2 1.3 3.5 2.7 3.5.5 0 1-.2 1.5-.5L12 21l.6.5c.5.3 1 .5 1.5.5 1.4 0 2.2-2.3 2.7-3.5C17.2 16 18 12 18 8.5 18 5 16 3 12 3z"/><path d="M9 7.5c1-.5 2-1 3-1s2 .5 3 1"/></svg>
+          </div>
+          <h1 class="auth-brand-title">DentFinance</h1>
+          <p class="auth-brand-desc">Gestión financiera para tu clínica dental</p>
+        </div>
+
+        <div class="auth-card" id="authCard">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+            <button class="auth-tab" data-tab="register">Crear Cuenta</button>
+          </div>
+
+          <div class="auth-form" id="authFormLogin">
+            {% include "includes/login_form.html" %}
+          </div>
+          <div class="auth-form hidden" id="authFormRegister">
+            {% include "includes/register_form.html" %}
+          </div>
+        </div>
+
+        <div class="auth-footer">
+          Desarrollado por <a href="https://portafolio-rodolfo.vercel.app/" target="_blank" rel="noopener">Rodolfo Riveros Mitma</a> &copy; <span id="footerYear">{% now "Y" %}</span>
+        </div>
+      </div>
+    </div>
+
+  
+    <script type="module" src="{% static 'js/auth.js' %}"></script>
+  </body>
+</html>

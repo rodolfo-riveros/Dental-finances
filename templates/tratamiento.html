@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static icons %}
+{% block title %}Tratamientos - DentFinance{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/tratamiento.css' %}" />{% endblock %}
+{% block content %}
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Pacientes y Tratamientos</h1>
+        <p class="page-subtitle">Gestión de pacientes, historial y nuevos tratamientos</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-label">Este mes</span>
+          <span class="stat-chip-value" id="statMonth">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Clínica</span>
+          <span class="stat-chip-value" id="statClinica">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Externo</span>
+          <span class="stat-chip-value" id="statExterno">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="glass-card form-section">
+        <div class="section-head">
+          <div class="section-head-icon">
+            {% icon "plus" 20 %}
+          </div>
+          <div>
+            <h2 class="section-title" id="formTitle">Nuevo Tratamiento</h2>
+            <p class="section-desc" id="formDesc">Registra un nuevo tratamiento</p>
+          </div>
+        </div>
+
+        <form id="tx-form" class="tx-form" novalidate>
+          <!-- Step indicator -->
+          <div class="tx-steps">
+            <div class="tx-step active" data-step="1">
+              <span class="tx-step-num">1</span>
+              <span class="tx-step-label">Paciente</span>
+            </div>
+            <div class="tx-step-line"></div>
+            <div class="tx-step" data-step="2">
+              <span class="tx-step-num">2</span>
+              <span class="tx-step-label">Tratamiento</span>
+            </div>
+            <div class="tx-step-line"></div>
+            <div class="tx-step" data-step="3">
+              <span class="tx-step-num">3</span>
+              <span class="tx-step-label">Finanzas</span>
+            </div>
+          </div>
+
+          <!-- Paso 1: Ubicación y Paciente -->
+          <div class="tx-step-content" data-step="1">
+            <div class="form-group">
+              <label class="form-label">Ubicación del servicio</label>
+              <div class="radio-row">
+                <label class="radio-card">
+                  <input type="radio" name="source" value="Clínica" checked />
+                  <span class="radio-content">
+                    {% icon "building" 22 %}
+                    <span class="radio-title">Clínica</span>
+                  </span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="source" value="Externo" />
+                  <span class="radio-content">
+                    {% icon "map-pin" 22 %}
+                    <span class="radio-title">Fuera de Local</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="tx-date" class="form-label">Fecha</label>
+                <div class="input-wrap">
+                  <span class="input-icon">{% icon "calendar" 16 %}</span>
+                  <input type="date" id="tx-date" name="date" class="form-input" required />
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="tx-patient" class="form-label">Paciente</label>
+                <div class="input-wrap">
+                  <span class="input-icon">{% icon "user" 16 %}</span>
+                  <input type="text" id="tx-patient" name="patient" placeholder="Nombre del paciente" class="form-input" required />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 2: Tipo de Tratamiento -->
+          <div class="tx-step-content" data-step="2" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Tipo de Tratamiento</label>
+              <div class="svc-filter-row">
+                <div class="input-wrap flex-1">
+                  <span class="input-icon">{% icon "search" 16 %}</span>
+                  <input type="search" id="svcSearch" class="form-input" placeholder="Buscar servicio..." autocomplete="off" />
+                </div>
+                <select id="svcSpecialty" class="form-input svc-specialty-select">
+                  <option value="">Todas las especialidades</option>
+                </select>
+              </div>
+              <div class="tx-type-list" id="txTypeGrid">
+                <div class="tx-type-loading">Cargando servicios...</div>
+              </div>
+              <label class="tx-type-card tx-type-other">
+                <input type="radio" name="type" value="Otro" />
+                <span class="tx-type-content">
+                  {% icon "ellipsis" 20 %}
+                  <span class="tx-type-name">Otro tratamiento</span>
+                </span>
+              </label>
+              <div class="other-input-wrap" id="otherGroup" style="display:none">
+                <div class="input-wrap">
+                  <span class="input-icon">{% icon "file-text" 16 %}</span>
+                  <input type="text" id="tx-other" name="otherType" placeholder="Especifica el tratamiento" class="form-input" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 3: Finanzas, cita y comprobante -->
+          <div class="tx-step-content" data-step="3" style="display:none">
+            <div class="fin-selected" id="finSelected"></div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="tx-total" class="form-label">Monto Total (S/)</label>
+                <div class="input-wrap">
+                  <span class="input-icon">{% icon "dollar-sign" 16 %}</span>
+                  <input type="number" id="tx-total" name="total" placeholder="0.00" step="0.01" min="0" class="form-input" required />
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="tx-paid" class="form-label">Monto Pagado (S/)</label>
+                <div class="input-wrap">
+                  <span class="input-icon">{% icon "check" 16 %}</span>
+                  <input type="number" id="tx-paid" name="paid" placeholder="0.00" step="0.01" min="0" class="form-input" />
+                </div>
+              </div>
+            </div>
+            <div class="balance-display" id="balanceDisplay">Saldo Pendiente: <strong>S/ 0.00</strong></div>
+            <p class="fin-hint hidden" id="balanceHint">{% icon "info" 13 %} El saldo pendiente se registrará automáticamente en <a href="/deudas">Deudas</a>.</p>
+
+            <div class="form-group">
+              <div class="costs-head">
+                <label class="form-label">Gastos Asociados</label>
+                <button type="button" class="btn-add-cost" id="addCostBtn">{% icon "plus" 14 %} Agregar gasto</button>
+              </div>
+              <div class="costs-list" id="costsList"></div>
+              <p class="costs-empty" id="costsEmpty">Sin gastos asociados. Agrega laboratorio, materiales, técnico, etc.</p>
+              <datalist id="costConcepts">
+                <option value="Laboratorio dental"></option>
+                <option value="Técnico dental"></option>
+                <option value="Materiales"></option>
+                <option value="Implante / componentes"></option>
+                <option value="Anestesia"></option>
+                <option value="Radiografía / tomografía"></option>
+                <option value="Esterilización"></option>
+                <option value="Asistente"></option>
+                <option value="Movilidad"></option>
+                <option value="Otros"></option>
+              </datalist>
+            </div>
+            <div class="costs-summary">
+              <span><span>Total Costos</span><strong id="totalCosts">S/ 0.00</strong></span>
+              <span><span>Ganancia Estimada <small>(total − costos)</small></span><strong id="estimatedProfit" class="profit">S/ 0.00</strong></span>
+              <span><span>Ganancia Cobrada <small>(pagado − costos)</small></span><strong id="collectedProfit" class="profit">S/ 0.00</strong></span>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <div class="form-group">
+              <label class="form-label">{% icon "calendar-clock" 14 %} Programar próxima cita <span class="label-optional">(opcional)</span></label>
+              <div class="form-row">
+                <div class="input-wrap flex-1">
+                  <span class="input-icon">{% icon "calendar" 16 %}</span>
+                  <input type="date" id="tx-appt-date" class="form-input" />
+                </div>
+                <div class="input-wrap flex-1">
+                  <span class="input-icon">{% icon "clock" 16 %}</span>
+                  <input type="time" id="tx-appt-time" class="form-input" value="09:00" />
+                </div>
+              </div>
+              <div class="input-wrap" style="margin-top:0.5rem">
+                <span class="input-icon">{% icon "notebook-pen" 16 %}</span>
+                <input type="text" id="tx-appt-note" class="form-input" maxlength="255" placeholder="Nota de la cita (ej: control, segunda sesión)" />
+              </div>
+              <p class="fin-hint">Si hay saldo pendiente, la deuda vencerá en la fecha de la cita (o a los 30 días si no programas cita).</p>
+            </div>
+
+            <div class="form-divider"></div>
+
+
+            <div class="form-group">
+              <label class="form-label">Comprobante</label>
+              <div class="voucher-upload" id="voucher-area">
+                <input type="file" id="tx-voucher" name="voucher" accept="image/*,.pdf" capture="environment" class="voucher-input" />
+                <div class="voucher-content" id="txVoucherContent">
+                  <div class="voucher-icon-wrap">
+                    {% icon "camera" 24 "voucher-icon" %}
+                  </div>
+                  <span class="voucher-text">Subir Comprobante</span>
+                  <span class="voucher-subtext">Toca para abrir cámara o galería — JPG, PNG, PDF</span>
+                </div>
+                <img id="tx-voucher-preview" class="voucher-preview" alt="Vista previa" />
+                <button type="button" class="voucher-clear hidden" id="txVoucherClear">
+                  {% icon "trash-2" 14 %}
+                  Eliminar comprobante
+                </button>
+              </div>
+            </div>
+              <div class="form-actions">
+              <button type="submit" class="btn-save" id="txSubmitBtn">
+                {% icon "plus" 18 %}
+                Guardar Tratamiento
+              </button>
+              <button type="button" class="btn-cancel hidden" id="txCancelBtn">
+                {% icon "x" 18 %}
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <!-- Navigation -->
+          <div class="tx-step-nav">
+            <button type="button" class="btn-nav btn-prev" id="txPrevBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+              Anterior
+            </button>
+            <button type="button" class="btn-nav btn-next" id="txNextBtn">
+              Siguiente
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="glass-card history-section">
+        <div class="section-head">
+          <div class="section-head-icon" style="background: rgba(99,102,241,0.1); color: #6366F1;">
+            {% icon "clipboard-list" 20 %}
+          </div>
+          <div class="section-head-text">
+            <h2 class="section-title">Historial de Tratamientos</h2>
+            <p class="section-desc" id="historialDesc">Todos los registros</p>
+          </div>
+          <select class="month-filter" id="txMonthFilter">
+            <option value="-1">Mostrar hoy</option>
+            {% for m in months %}<option value="{{ forloop.counter0 }}"{% if forloop.counter0 == current_month %} selected{% endif %}>{{ m }}</option>{% endfor %}
+            <option value="99">Ver todos</option>
+          </select>
+          <button class="pdf-btn" id="exportPdfBtn" title="Exportar PDF del mes">
+            {% icon "file-text" 16 %}
+            PDF
+          </button>
+        </div>
+
+        <div class="tx-list" id="txList"></div>
+        <div class="tx-empty hidden" id="txEmpty">
+          {% icon "clipboard-list" 24 %}
+          <span>No hay tratamientos para este filtro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div class="dtl-overlay hidden" id="txModal">
+    <div class="dtl-panel">
+      <div class="dtl-head">
+        <div class="dtl-head-left">
+          <div class="dtl-icon" style="background: rgba(99,102,241,0.1); color: #6366F1;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <div class="dtl-title">Detalle del Tratamiento</div>
+            <span class="dtl-badge" id="mType">Tipo</span>
+          </div>
+        </div>
+        <button class="dtl-close" id="txModalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="dtl-body">
+        <div class="dtl-amount-row" style="background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.08);">
+          <span class="dtl-amount" style="color: #6366F1;" id="mTotal">S/ 0</span>
+          <span class="dtl-date" id="mDate">—</span>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Paciente</span>
+          <p class="dtl-desc" id="mPatient">—</p>
+        </div>
+
+        <div class="dtl-info-grid">
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Ubicación</span>
+            <span class="dtl-info-value" id="mSource">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Monto Pagado</span>
+            <span class="dtl-info-value" id="mPaid">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Saldo Pendiente</span>
+            <span class="dtl-info-value" id="mBalance">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Gastos Asociados</span>
+            <span class="dtl-info-value" id="mCosts">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Ganancia Estimada</span>
+            <span class="dtl-info-value" id="mProfit">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Próxima Cita</span>
+            <span class="dtl-info-value" id="mAppt">—</span>
+          </div>
+        </div>
+
+        <div class="dtl-voucher-box" id="mVoucherField" style="display:none">
+          <div class="dtl-voucher-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+            <span>Comprobante</span>
+          </div>
+          <div class="dtl-voucher-img-wrap">
+            <img id="mVoucherImg" class="dtl-voucher-img" alt="Comprobante" />
+            <span id="voucherError" class="dtl-voucher-err">No se pudo cargar la imagen</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print area (hidden on screen) -->
+  <div id="printArea" class="print-area"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'js/tratamiento.js' %}"></script>{% endblock %}

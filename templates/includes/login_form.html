@@ -1,0 +1,54 @@
+<form class="login-form" id="loginForm" novalidate>
+  <div class="form-group">
+    <label for="login-email" class="form-label">Correo Electrónico</label>
+    <input type="email" id="login-email" name="email" class="form-input" placeholder="admin@dental.com" />
+    <p class="error-message" id="login-email-error"></p>
+  </div>
+
+  <div class="form-group">
+    <label for="login-password" class="form-label">Contraseña</label>
+    <input type="password" id="login-password" name="password" class="form-input" placeholder="••••••••" />
+    <p class="error-message" id="login-password-error"></p>
+  </div>
+
+  <div class="form-options">
+    <label class="checkbox-container">
+      <input type="checkbox" name="rememberMe" class="checkbox-input" id="loginRemember" />
+      <span class="checkbox-custom"></span>
+      <span class="checkbox-label">Recordarme</span>
+    </label>
+    <a href="#" class="forgot-password" id="forgotLink">¿Olvidaste tu contraseña?</a>
+  </div>
+
+  <button type="submit" class="btn-primary w-full" id="login-submit">
+    Iniciar Sesión
+  </button>
+
+  <p class="auth-hint" id="loginHint">
+    Inicia sesión con tu cuenta registrada
+  </p>
+</form>
+
+<!-- Recovery Modal -->
+<div class="recovery-overlay hidden" id="recoveryOverlay">
+  <div class="recovery-modal">
+    <div class="recovery-header">
+      <h3>Recuperar Contraseña</h3>
+      <button class="recovery-close" id="recoveryClose">&times;</button>
+    </div>
+    <div class="recovery-body">
+      <p class="recovery-desc">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+      <div class="form-group">
+        <input type="email" id="recoveryEmail" class="form-input" placeholder="tu@correo.com" />
+        <p class="error-message" id="recoveryError"></p>
+      </div>
+      <div class="recovery-success hidden" id="recoverySuccess">
+        <span>&#10003;</span> Correo enviado. Revisa tu bandeja de entrada.
+      </div>
+    </div>
+    <div class="recovery-footer">
+      <button class="recovery-btn-cancel" id="recoveryCancel">Cancelar</button>
+      <button class="btn-primary" id="recoverySubmit">Enviar Enlace</button>
+    </div>
+  </div>
+</div>

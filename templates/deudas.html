@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static icons %}
+{% block title %}Deudas - DentFinance{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/deudas.css' %}" />{% endblock %}
+{% block content %}
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Estado de Deudas</h1>
+        <p class="page-subtitle">Control de cuentas por cobrar separado por origen</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-label">Pendiente</span>
+          <span class="stat-chip-value" id="statPending" style="color: var(--c-danger)">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Cobrado</span>
+          <span class="stat-chip-value" id="statPaid" style="color: var(--c-success)">S/ 0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-label">Deudas</span>
+          <span class="stat-chip-value" id="statCount">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- Form -->
+      <div class="glass-card form-section">
+        <div class="section-head">
+          <div class="section-head-icon">
+            {% icon "plus" 20 %}
+          </div>
+          <div>
+            <h2 class="section-title" id="formTitle">Nueva Deuda</h2>
+            <p class="section-desc" id="formDesc">Registra una nueva deuda</p>
+          </div>
+        </div>
+
+        <form id="debt-form" class="debt-form" novalidate>
+          <div class="form-group">
+            <label class="form-label">Origen</label>
+            <div class="radio-row">
+              <label class="radio-card">
+                <input type="radio" name="source" value="Clínica" checked />
+                <span class="radio-content">
+                  {% icon "building" 22 %}
+                  <span class="radio-title">Clínica</span>
+                </span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="source" value="Externo" />
+                <span class="radio-content">
+                  {% icon "map-pin" 22 %}
+                  <span class="radio-title">Fuera de Local</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="debt-patient" class="form-label">Paciente / Deudor</label>
+            <div class="input-wrap">
+              <span class="input-icon">{% icon "user" 16 %}</span>
+              <input type="text" id="debt-patient" name="patient" placeholder="Nombre del paciente" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="debt-desc" class="form-label">Descripción</label>
+            <div class="input-wrap">
+              <span class="input-icon">{% icon "file-text" 16 %}</span>
+              <input type="text" id="debt-desc" name="description" placeholder="Concepto de la deuda" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="debt-amount" class="form-label">Monto (S/)</label>
+              <div class="input-wrap">
+                <span class="input-icon">{% icon "dollar-sign" 16 %}</span>
+                <input type="number" id="debt-amount" name="amount" placeholder="0.00" step="0.01" min="0" class="form-input" required />
+              </div>
+            </div>
+            <div class="form-group flex-1">
+              <label for="debt-due" class="form-label">Fecha de Vencimiento</label>
+              <div class="input-wrap">
+                <span class="input-icon">{% icon "calendar" 16 %}</span>
+                <input type="date" id="debt-due" name="dueDate" class="form-input" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-divider"></div>
+
+          <div class="form-group">
+            <label class="form-label">Comprobante (opcional)</label>
+            <div class="voucher-upload" id="voucher-area">
+              <input type="file" id="debt-voucher" name="voucher" accept="image/*,.pdf" capture="environment" class="voucher-input" />
+              <div class="voucher-content" id="debtVoucherContent">
+                <div class="voucher-icon-wrap">
+                  {% icon "camera" 24 "voucher-icon" %}
+                </div>
+                <span class="voucher-text">Subir Comprobante</span>
+                <span class="voucher-subtext">Toca para abrir cámara o galería — JPG, PNG, PDF</span>
+              </div>
+              <img id="debt-voucher-preview" class="voucher-preview" alt="Vista previa" />
+              <button type="button" class="voucher-clear hidden" id="debtVoucherClear">
+                {% icon "trash-2" 14 %}
+                Eliminar comprobante
+              </button>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-save" id="debtSubmitBtn">
+              {% icon "plus" 18 %}
+              Guardar Deuda
+            </button>
+            <button type="button" class="btn-cancel hidden" id="debtCancelBtn">
+              {% icon "x" 18 %}
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Debt sections -->
+      <div class="debt-sections">
+        <!-- Clinica Section -->
+        <div class="glass-card">
+          <div class="section-head">
+            <div class="section-head-icon" style="background: rgba(13,148,136,0.1); color: #0D9488;">
+              {% icon "building" 18 %}
+            </div>
+            <div class="section-head-text">
+              <h2 class="section-title">Clínica</h2>
+              <p class="section-desc" id="descClinica">0 registros</p>
+            </div>
+            <select class="month-filter" data-section="clinica">
+              <option value="-1">Mostrar hoy</option>
+              {% for m in months %}<option value="{{ forloop.counter0 }}">{{ m }}</option>{% endfor %}
+              <option value="99" selected>Ver todos</option>
+            </select>
+            <button class="pdf-btn" data-section="clinica" title="Exportar PDF">
+              {% icon "file-text" 16 %}
+              PDF
+            </button>
+          </div>
+          <div class="debt-list" id="listClinica"></div>
+          <div class="debt-empty hidden" id="emptyClinica">
+            {% icon "credit-card" 24 %}
+            <span>No hay deudas de Clínica</span>
+          </div>
+        </div>
+
+        <!-- Externo Section -->
+        <div class="glass-card">
+          <div class="section-head">
+            <div class="section-head-icon" style="background: rgba(16,185,129,0.1); color: #10B981;">
+              {% icon "map-pin" 18 %}
+            </div>
+            <div class="section-head-text">
+              <h2 class="section-title">Fuera de Local</h2>
+              <p class="section-desc" id="descExterno">0 registros</p>
+            </div>
+            <select class="month-filter" data-section="externo">
+              <option value="-1">Mostrar hoy</option>
+              {% for m in months %}<option value="{{ forloop.counter0 }}">{{ m }}</option>{% endfor %}
+              <option value="99" selected>Ver todos</option>
+            </select>
+            <button class="pdf-btn" data-section="externo" title="Exportar PDF">
+              {% icon "file-text" 16 %}
+              PDF
+            </button>
+          </div>
+          <div class="debt-list" id="listExterno"></div>
+          <div class="debt-empty hidden" id="emptyExterno">
+            {% icon "credit-card" 24 %}
+            <span>No hay deudas de Externo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div class="dtl-overlay hidden" id="detailModal">
+    <div class="dtl-panel">
+      <div class="dtl-head">
+        <div class="dtl-head-left">
+          <div class="dtl-icon" style="background: rgba(217,119,6,0.1); color: #D97706;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+          </div>
+          <div>
+            <div class="dtl-title">Detalle de Deuda</div>
+            <span class="dtl-badge" id="mSource">Origen</span>
+          </div>
+        </div>
+        <button class="dtl-close" id="modalClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="dtl-body">
+        <div class="dtl-amount-row" style="background: rgba(217,119,6,0.05); border-color: rgba(217,119,6,0.08);">
+          <span class="dtl-amount" id="mAmount">S/ 0</span>
+          <span class="dtl-date" id="mStatus" style="font-size:0.78rem;font-weight:600;">—</span>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Paciente</span>
+          <p class="dtl-desc" id="mPatient">—</p>
+        </div>
+
+        <div class="dtl-desc-box">
+          <span class="dtl-desc-label">Descripción</span>
+          <p class="dtl-desc" id="mDesc">—</p>
+        </div>
+
+        <div class="dtl-info-grid">
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Vencimiento</span>
+            <span class="dtl-info-value" id="mDue">—</span>
+          </div>
+          <div class="dtl-info-item">
+            <span class="dtl-info-label">Estado</span>
+            <span class="dtl-info-value" id="mStatus2">—</span>
+          </div>
+        </div>
+
+        <div class="dtl-voucher-box" id="mVoucherField" style="display:none">
+          <div class="dtl-voucher-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+            <span>Comprobante</span>
+          </div>
+          <div class="dtl-voucher-img-wrap">
+            <img id="mVoucherImg" class="dtl-voucher-img" alt="Comprobante" />
+            <span id="voucherError" class="dtl-voucher-err">No se pudo cargar la imagen</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-pay" id="modalPay">
+          {% icon "check" 14 %}
+          Marcar como Pagado
+        </button>
+        <button class="modal-btn modal-btn-delete" id="modalDelete">
+          {% icon "trash-2" 14 %}
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print area -->
+  <div id="printArea" class="print-area"></div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'js/deudas.js' %}"></script>{% endblock %}

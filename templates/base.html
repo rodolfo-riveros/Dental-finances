@@ -1,0 +1,164 @@
+{% load static icons %}<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="{% block description %}Aplicacion de gestion financiera para clinicas dentales.{% endblock %}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <title>{% block title %}DentFinance - Gestion Financiera{% endblock %}</title>
+    <script>
+      (function () {
+        var t = localStorage.getItem('df_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}" />
+    {% block styles %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/mobile_nav.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="sidebar-bg"></div>
+        <div class="sidebar-content">
+          <div class="sidebar-brand">
+            <div class="brand-icon-wrap">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 0-6 2-6 5.5 0 3.5.8 7.5 1.8 10 .5 1.2 1.3 3.5 2.7 3.5.5 0 1-.2 1.5-.5L12 21l.6.5c.5.3 1 .5 1.5.5 1.4 0 2.2-2.3 2.7-3.5C17.2 16 18 12 18 8.5 18 5 16 3 12 3z"/><path d="M9 7.5c1-.5 2-1 3-1s2 .5 3 1"/></svg>
+            </div>
+            <div class="brand-text">
+<span class="brand-main">Dent</span>
+          <span class="brand-highlight">Finance</span>
+            </div>
+          </div>
+
+          {% include "includes/clinic_switcher.html" %}
+
+          <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item" id="nav-dashboard">
+              {% icon "layout-dashboard" 18 "nav-icon" %}
+              <span>Inicio</span>
+            </a>
+            <a href="/gastos" class="nav-item" id="nav-gastos">
+              {% icon "receipt" 18 "nav-icon" %}
+              <span>Gastos</span>
+            </a>
+            <a href="/tratamiento" class="nav-item" id="nav-tratamiento">
+              {% icon "clipboard-list" 18 "nav-icon" %}
+              <span>Tratamiento</span>
+            </a>
+            <a href="/deudas" class="nav-item" id="nav-deudas">
+              {% icon "credit-card" 18 "nav-icon" %}
+              <span>Deudas</span>
+            </a>
+            <a href="/ajustes" class="nav-item" id="nav-ajustes">
+              {% icon "settings" 18 "nav-icon" %}
+              <span>Ajustes</span>
+            </a>
+          </nav>
+
+          <div class="sidebar-footer">
+            <div class="user-dropdown">
+              <button class="user-card" id="profileBtn">
+                <div class="user-avatar"><span id="profileAvatar">{{ user_initials }}</span><span class="avatar-notif-dot hidden" id="avatarNotifDot"></span></div>
+                <div class="user-details">
+                  <span class="user-name" id="profileName">{{ user_display_name }}</span>
+                  <span class="user-role" id="profileRole">{{ clinic.name }}</span>
+                </div>
+                {% icon "chevron-up" 14 "user-arrow" %}
+              </button>
+              <div class="dropdown-menu" id="dropdownMenu">
+                <div class="dropdown-header">
+                  <span class="dropdown-user-name" id="dropdownName">{{ user_display_name }}</span>
+                  <span class="dropdown-user-email" id="dropdownEmail">{{ user.email }}</span>
+                </div>
+                <!-- Notificaciones -->
+                <div class="dropdown-notif" id="dropdownNotif">
+                  <div class="dropdown-notif-head">
+                    {% icon "bell" 14 %}
+                    <span>Notificaciones</span>
+                    <span class="dropdown-notif-dot hidden" id="notifDot"></span>
+                  </div>
+                  <div class="dropdown-notif-list" id="notifList">
+                    <div class="dropdown-notif-empty">Sin notificaciones</div>
+                  </div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" id="dropdownEdit">
+                  {% icon "user-pen" 16 %}
+                  Editar Perfil
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" id="dropdownTheme">
+                  {% icon "sun" 16 "dropdown-theme-sun" %}
+                  {% icon "moon" 16 "dropdown-theme-moon" %}
+                  <span id="dropdownThemeLabel">Modo Oscuro</span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item danger" id="dropdownLogout">
+                  {% icon "log-out" 16 %}
+                  Cerrar Sesion
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {% include "includes/mobile_nav.html" %}
+
+      <main class="main-content">
+        <div class="main-content-inner">
+          {% block content %}{% endblock %}
+        </div>
+        <footer class="app-footer">
+          <div class="app-footer-inner">
+            <span>Desarrollado por <a href="https://portafolio-rodolfo.vercel.app/" target="_blank" rel="noopener">Rodolfo Riveros Mitma</a></span>
+            <span>&copy; <span id="footerYear">{% now "Y" %}</span> DentFinance</span>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="profile-modal-overlay" id="profileModal">
+      <div class="profile-modal">
+        <div class="profile-modal-header">
+          <h3 class="profile-modal-title">Mi Perfil</h3>
+          <button class="profile-modal-close" id="profileModalClose">
+            {% icon "x" 18 %}
+          </button>
+        </div>
+        <div class="profile-modal-body">
+          <div class="profile-field">
+            <label class="profile-label">Nombre</label>
+            <input type="text" class="profile-input" id="profileFieldName" placeholder="Tu nombre" />
+          </div>
+          <div class="profile-field">
+            <label class="profile-label">Email</label>
+            <input type="email" class="profile-input" id="profileFieldEmail" placeholder="correo@ejemplo.com" />
+          </div>
+          <div class="profile-field">
+            <label class="profile-label">Clinica</label>
+            <input type="text" class="profile-input" id="profileFieldClinic" placeholder="Nombre de la clinica" />
+          </div>
+        </div>
+        <div class="profile-modal-footer">
+          <button class="profile-btn-cancel" id="profileCancel">Cancelar</button>
+          <button class="profile-btn-save" id="profileSave">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    {{ profile_json|json_script:"df-profile" }}
+    <script src="{% static 'js/layout.js' %}"></script>
+    <script src="{% static 'js/mobile_nav.js' %}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

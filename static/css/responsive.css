@@ -1,0 +1,40 @@
+/* Ajustes responsive comunes: se carga después del CSS de cada página. */
+  /* ---- Responsive: el contenido nunca debe ensanchar la página ---- */
+  .main-content { min-width: 0; }
+  .main-content-inner > *, .activity-info, .expense-info, .d-info { min-width: 0; }
+  img { max-width: 100%; }
+  @media (max-width: 768px) {
+    .main-content-inner { padding: 4.25rem 1rem 1.25rem; }
+    .page-header { flex-direction: column; align-items: stretch !important; }
+    .page-header-stats { flex-wrap: wrap; }
+    .page-header-stats .stat-chip { flex: 1 1 0; min-width: 90px; }
+    .page-title { font-size: 1.3rem !important; }
+    .section-head { flex-wrap: wrap; }
+    .section-head .month-filter { flex: 1 1 auto; }
+    .glass-card { padding: 1.1rem !important; }
+    .app-footer-inner { flex-direction: column; gap: 0.25rem; padding: 0.9rem 1rem; text-align: center; }
+    .toast-container { left: 0.75rem; right: 0.75rem; top: 0.75rem; max-width: none; }
+    .profile-modal { width: 100%; margin: 0 0.75rem; }
+    .dtl-panel, .modal-panel { width: calc(100vw - 1.5rem) !important; max-height: calc(100vh - 1.5rem); overflow-y: auto; }
+    .pagination { flex-wrap: wrap; justify-content: center; }
+  }
+  @media (max-width: 400px) {
+    .form-row { flex-direction: column; gap: 0 !important; }
+  }
+
+  /* ---- Listas (tratamientos, gastos, deudas) en móvil ---- */
+  @media (max-width: 640px) {
+    .section-head .section-head-text { flex: 1 1 calc(100% - 52px); }
+    .section-head .month-filter { flex: 1 1 auto; min-width: 0; }
+    .tx-card-main, .expense-card-main { flex-wrap: wrap; row-gap: 0.5rem; }
+    .tx-card-main .expense-left, .expense-card-main .expense-left { flex: 1 1 100%; }
+    .tx-card-main .tx-source { margin-left: 2.6rem; }
+    .tx-card-main .expense-right, .expense-card-main .expense-right { margin-left: auto; }
+    .tx-patient, .expense-desc, .d-patient { white-space: normal !important; overflow-wrap: anywhere; }
+    .expense-meta { flex-wrap: wrap; row-gap: 0.2rem; }
+    .tx-type-badge { white-space: normal; line-height: 1.35; border-radius: 8px !important; }
+    .d-item-main { flex-wrap: wrap; row-gap: 0.5rem; }
+    .d-item-main .d-info { flex: 1 1 calc(100% - 52px); }
+    .d-item-main .d-right { flex: 1 1 100%; justify-content: flex-end; }
+    .d-header { flex-wrap: wrap; row-gap: 0.25rem; }
+  }

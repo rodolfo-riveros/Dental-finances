@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static icons %}
+{% block title %}Ajustes - DentFinance{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/ajustes.css' %}" />{% endblock %}
+{% block content %}
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <div class="hdr-badge">
+          {% icon "settings" 12 %}
+          <span>Configuración</span>
+        </div>
+        <h1 class="page-title">Ajustes de la Clínica</h1>
+        <p class="page-subtitle">Personaliza el nombre de tu clínica y administra los servicios que ofreces</p>
+      </div>
+      <div class="page-header-stats">
+        <div class="stat-chip">
+          <span class="stat-chip-value" id="svcCount">—</span>
+          <span class="stat-chip-label">Servicios</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-value" id="clinicStat">—</span>
+          <span class="stat-chip-label">Clínica activa</span>
+        </div>
+        <button class="stat-chip" id="replayTour" title="Ver tour de bienvenida" style="cursor:pointer;border:1px solid var(--c-glass-border);background:var(--c-glass);font-family:var(--font-sans)">
+          <span style="font-size:0.72rem;font-weight:600;color:var(--c-text);display:flex;align-items:center;gap:0.25rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l2.31-.66a2.25 2.25 0 001.632-2.163zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 01-.99-3.467l2.31-.66A2.25 2.25 0 009 15.553z"/></svg>
+            Tour
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Clinic Info -->
+    <section class="settings-section" id="clinicas">
+      <div class="aj-orb" style="top: -60px; right: -40px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(13,148,136,0.08), transparent)"></div>
+      <div class="section-head">
+        <div class="section-icon" style="background: rgba(13,148,136,0.1); color: var(--c-primary)">
+          {% icon "building-2" 18 %}
+        </div>
+        <div class="section-head-text">
+          <h2 class="section-title">Mis Clínicas</h2>
+          <p class="section-desc">Cada clínica tiene sus propios servicios, tratamientos, gastos y deudas. Cambia de clínica desde el menú lateral.</p>
+        </div>
+        <button class="btn-add" id="addClinic">
+          {% icon "plus" 14 %}
+          Nueva clínica
+        </button>
+      </div>
+      <div class="clinic-grid" id="clinicGrid"></div>
+    </section>
+
+    <!-- Services -->
+    <section class="settings-section">
+      <div class="aj-orb" style="bottom: -50px; left: -30px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(139,92,246,0.08), transparent)"></div>
+      <div class="section-head">
+        <div class="section-icon" style="background: rgba(139,92,246,0.1); color: #8B5CF6">
+          {% icon "clipboard-list" 18 %}
+        </div>
+        <div class="section-head-text">
+          <h2 class="section-title">Servicios</h2>
+          <p class="section-desc">Administra los tratamientos y procedimientos que ofrece tu clínica</p>
+        </div>
+        <button class="btn-add btn-restore" id="restoreServices" title="Agregar los servicios del catálogo que falten">
+          {% icon "rotate-ccw" 14 %}
+          Catálogo
+        </button>
+        <button class="btn-add" id="addService">
+          {% icon "plus" 14 %}
+          Nuevo
+        </button>
+      </div>
+      <div class="svc-toolbar">
+        <div class="input-wrap" style="flex:1">
+          <div class="input-icon">{% icon "search" 16 %}</div>
+          <input type="search" class="form-input" id="svcFilterText" placeholder="Buscar servicio..." />
+        </div>
+        <select class="form-input svc-filter-select" id="svcFilterSpecialty">
+          <option value="">Todas las especialidades</option>
+        </select>
+      </div>
+      <div id="servicesGrid"></div>
+    </section>
+  </div>
+
+  <!-- Modal clínica -->
+  <div class="modal-overlay hidden" id="clinicModal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title" id="clinicModalTitle">Nueva Clínica</h3>
+        <button class="modal-close" id="clinicModalClose">{% icon "x" 18 %}</button>
+      </div>
+      <div class="modal-body">
+        <div class="aj-field">
+          <label class="aj-label">{% icon "building-2" 12 %} Nombre de la clínica</label>
+          <div class="input-wrap"><input type="text" class="form-input aj-input-solo" id="clName" maxlength="150" placeholder="Ej: Clínica Dental Sonrisas — Sede Centro" /></div>
+        </div>
+        <div class="aj-row">
+          <div class="aj-field" style="flex:1">
+            <label class="aj-label">{% icon "mail" 12 %} Correo</label>
+            <div class="input-wrap"><input type="email" class="form-input aj-input-solo" id="clEmail" placeholder="correo@clinica.com" /></div>
+          </div>
+          <div class="aj-field" style="flex:1">
+            <label class="aj-label">{% icon "phone" 12 %} Teléfono</label>
+            <div class="input-wrap"><input type="tel" class="form-input aj-input-solo" id="clPhone" maxlength="30" placeholder="987 654 321" /></div>
+          </div>
+        </div>
+        <div class="aj-field">
+          <label class="aj-label">{% icon "map-pin" 12 %} Dirección</label>
+          <div class="input-wrap"><input type="text" class="form-input aj-input-solo" id="clAddress" maxlength="255" placeholder="Av. Principal 123, Lima" /></div>
+        </div>
+        <div class="aj-field">
+          <label class="aj-label">{% icon "palette" 12 %} Color</label>
+          <div class="color-picker" id="clColorPicker">
+            {% for c in colors %}<button type="button" class="color-swatch" data-color="{{ c }}" style="background: {{ c }}"></button>{% endfor %}
+          </div>
+        </div>
+        <p class="aj-hint" id="clNewHint">La nueva clínica se crea con el catálogo completo de servicios odontológicos.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" id="clinicModalCancel">Cancelar</button>
+        <button class="modal-btn-save" id="clinicModalSave">{% icon "check" 14 %} Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="serviceModal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Nuevo Servicio</h3>
+        <button class="modal-close" id="modalClose">{% icon "x" 18 %}</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Información básica -->
+        <div class="aj-field">
+          <label class="aj-label">
+            {% icon "clipboard-list" 12 %}
+            Nombre del Servicio
+          </label>
+          <div class="input-wrap">
+            <input type="text" class="form-input aj-input-solo" id="svcTitle" placeholder="Ej: Limpieza Dental" />
+          </div>
+        </div>
+
+        <div class="aj-field">
+          <label class="aj-label">
+            {% icon "stethoscope" 12 %}
+            Especialidad
+          </label>
+          <div class="input-wrap">
+            <input type="text" class="form-input aj-input-solo" id="svcSpecialty" list="specialtyList" placeholder="Ej: Endodoncia" />
+            <datalist id="specialtyList"></datalist>
+          </div>
+        </div>
+
+        <div class="aj-field">
+          <label class="aj-label">
+            {% icon "file-text" 12 %}
+            Descripción
+          </label>
+          <div class="input-wrap">
+            <textarea class="form-input aj-textarea" id="svcDesc" placeholder="Breve descripción del servicio"></textarea>
+          </div>
+        </div>
+
+        <div class="aj-row">
+          <div class="aj-field" style="flex:1">
+            <label class="aj-label">
+              {% icon "dollar-sign" 12 %}
+              Precio
+            </label>
+            <div class="input-wrap">
+              <span class="aj-currency">S/</span>
+              <input type="number" class="form-input aj-input-currency" id="svcPrice" placeholder="150" min="0" />
+            </div>
+          </div>
+          <div class="aj-field" style="flex:1">
+            <label class="aj-label">
+              {% icon "tag" 12 %}
+              Categoría
+            </label>
+            <div class="input-wrap">
+              <select class="form-input" id="svcCategory">
+                {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color -->
+        <div class="aj-field">
+          <label class="aj-label">
+            {% icon "palette" 12 %}
+            Color del servicio
+          </label>
+          <div class="aj-color-section">
+            <div class="color-picker" id="colorPicker">
+              {% for c in colors %}<button type="button" class="color-swatch" data-color="{{ c }}" style="background: {{ c }}"></button>{% endfor %}
+            </div>
+            <div class="aj-color-custom">
+              <input type="color" id="svcColorPicker" value="#0D9488" />
+              <input type="text" class="form-input aj-input-hex" id="svcColorHex" value="#0D9488" maxlength="7" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" id="modalCancel">Cancelar</button>
+        <button class="modal-btn-save" id="modalSaveService">
+          {% icon "check" 14 %}
+          Guardar Servicio
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'js/ajustes.js' %}"></script>{% endblock %}

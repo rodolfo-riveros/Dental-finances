@@ -1,0 +1,32 @@
+{% load static %}<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}DentFinance{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      document.documentElement.setAttribute('data-theme', localStorage.getItem('df_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+    </script>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/login_form.css' %}" />
+    <style>
+      .reset-errors { color: var(--c-danger); font-size: 0.78rem; margin-top: 0.3rem; list-style: none; }
+      .reset-text { font-size: 0.875rem; color: var(--c-text-light); margin-bottom: 1rem; line-height: 1.5; }
+      .reset-link { display: inline-block; margin-top: 1rem; color: var(--c-primary); font-weight: 600; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class="auth-page">
+      <div class="auth-bg"><div class="auth-orb auth-orb-1"></div><div class="auth-orb auth-orb-2"></div></div>
+      <div class="auth-container">
+        <div class="auth-brand">
+          <h1 class="auth-brand-title">DentFinance</h1>
+          <p class="auth-brand-desc">{% block subtitle %}{% endblock %}</p>
+        </div>
+        <div class="auth-card">{% block card %}{% endblock %}</div>
+      </div>
+    </div>
+  </body>
+</html>

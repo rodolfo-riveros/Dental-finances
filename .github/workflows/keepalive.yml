@@ -1,0 +1,29 @@
+# Respaldo externo del keep-alive: visita /healthz cada 10 minutos para que
+# Render Free no apague el servicio y la BD / Appwrite registren actividad.
+# Configura el secreto KEEPALIVE_URL (ej: https://dentfinance.onrender.com/healthz)
+# en Settings > Secrets and variables > Actions.
+name: keep-alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping /healthz
+        env:
+          KEEPALIVE_URL: ${{ secrets.KEEPALIVE_URL }}
+        run: |
+          if [ -z "$KEEPALIVE_URL" ]; then
+            echo "Falta el secreto KEEPALIVE_URL"; exit 0
+          fi
+          # Hasta 3 intentos: si el servicio estaba dormido tarda ~1 min en despertar.
+          for i in 1 2 3; do
+            if curl -fsS --max-time 90 "$KEEPALIVE_URL"; then echo; exit 0; fi
+            sleep 20
+          done
+          exit 1

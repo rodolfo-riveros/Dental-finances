@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static icons %}
+{% block title %}Dashboard - DentFinance{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}" /><link rel="stylesheet" href="{% static 'vendor/driver.css' %}" />{% endblock %}
+{% block content %}
+  <div class="dash">
+    <!-- Greeting Card -->
+    <div class="greeting-card-3d">
+      <div class="greeting-bg"></div>
+      <div class="greeting-glow"></div>
+      <div class="greeting-content">
+        <div class="greeting-text">
+          <div class="greeting-saludo"><span id="greetingText">{{ greeting }}</span>, <strong id="greetingName">{{ user.first_name|default:user_display_name }}</strong></div>
+          <div class="greeting-date">
+            {% icon "calendar" 14 %}
+            <span id="greetingDate">{{ date_str }}</span>
+          </div>
+        </div>
+        <div class="greeting-actions">
+          <select class="dash-select month-filter" id="monthFilter">
+            {% for m in months %}<option value="{{ forloop.counter0 }}"{% if forloop.counter0 == current_month %} selected{% endif %}>{{ m }} {{ current_year }}</option>{% endfor %}
+          </select>
+          <div class="greeting-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 0-6 2-6 5.5 0 3.5.8 7.5 1.8 10 .5 1.2 1.3 3.5 2.7 3.5.5 0 1-.2 1.5-.5L12 21l.6.5c.5.3 1 .5 1.5.5 1.4 0 2.2-2.3 2.7-3.5C17.2 16 18 12 18 8.5 18 5 16 3 12 3z"/><path d="M9 7.5c1-.5 2-1 3-1s2 .5 3 1"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="dash-cards" id="summaryCards">
+      <div class="dash-card" style="--card-accent: #059669">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(5,150,105,0.15), transparent 70%)"></div>
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(5,150,105,0.12); color:#059669">
+              {% icon "dollar-sign" 20 %}
+            </div>
+            <span class="dash-card-label">Ganancia Neta</span>
+          </div>
+          <span class="dash-card-value" id="valGanancia">S/ 0</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change up" id="changeGanancia">—</span>
+            <div class="dash-card-mini">
+              <span class="mini-cur">—</span><span class="mini-prev">—</span>
+              <div class="mini-bar"><div class="mini-fill" id="miniG1" style="width:0%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" id="miniG2" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="--card-accent: #DC2626">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(220,38,38,0.12), transparent 70%)"></div>
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(220,38,38,0.12); color:#DC2626">
+              {% icon "receipt" 20 %}
+            </div>
+            <span class="dash-card-label">Gastos del Mes</span>
+          </div>
+          <span class="dash-card-value" id="valGastos">S/ 0</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change up" id="changeGastos">—</span>
+            <div class="dash-card-mini">
+              <span class="mini-cur">—</span><span class="mini-prev">—</span>
+              <div class="mini-bar"><div class="mini-fill" id="miniE1" style="width:0%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" id="miniE2" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" id="deudaCard" style="--card-accent: #D97706">
+        <div class="dash-card-bg">
+          <div class="dash-card-glow" style="background: radial-gradient(circle at 30% 40%, rgba(217,119,6,0.12), transparent 70%)"></div>
+        </div>
+        <div class="dash-card-body">
+          <div class="dash-card-top">
+            <div class="dash-card-icon-wrap" style="background: rgba(217,119,6,0.12); color:#D97706">
+              {% icon "credit-card" 20 %}
+            </div>
+            <span class="dash-card-label">Deudas Pendientes</span>
+          </div>
+          <span class="dash-card-value" id="valDeudas">S/ 0</span>
+          <div class="dash-card-footer">
+            <span class="dash-card-change down" id="activeDebtCount">
+              {% icon "trending-down" 12 %}
+              — deudas activas
+            </span>
+            <div class="dash-card-mini">
+              <span>Pend.</span><span>Pag.</span>
+              <div class="mini-bar"><div class="mini-fill" id="miniD1" style="width:0%"></div></div>
+              <div class="mini-bar"><div class="mini-fill" id="miniD2" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart + Activity -->
+    <div class="dash-grid-2">
+      <div class="dash-section glass-card">
+        <div class="dash-section-head">
+          <div>
+            <h2 class="dash-section-title">Ingresos por Fuente</h2>
+            <p class="dash-section-desc">Comparativa Clínica vs Externo</p>
+          </div>
+          <div class="dash-filter-group">
+            <select class="dash-select" id="incomeFilter">
+              <option value="month">Este mes</option>
+              <option value="quarter">Último trimestre</option>
+              <option value="year">Este año</option>
+            </select>
+          </div>
+        </div>
+        <div id="incomeChartContainer">
+          
+        </div>
+      </div>
+
+      <div class="dash-section glass-card">
+        <div class="dash-section-head">
+          <div>
+            <h2 class="dash-section-title">Actividad Reciente</h2>
+            <p class="dash-section-desc">Últimos movimientos</p>
+          </div>
+          <a href="/gastos" class="dash-link">Ver todo</a>
+        </div>
+        <div class="activity-list" id="activityList">
+          <div class="activity-item">
+            <div class="activity-icon expense">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="activity-info">
+              <span class="activity-desc">Cargando actividad...</span>
+              <span class="activity-date">—</span>
+            </div>
+            <span class="activity-amount" style="color:var(--c-text-light)">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-section glass-card" id="apptSection">
+      <div class="dash-section-head">
+        <div>
+          <h2 class="dash-section-title">Próximas Citas</h2>
+          <p class="dash-section-desc">Citas programadas desde Tratamientos</p>
+        </div>
+        <a href="/tratamiento" class="dash-link">Ver tratamientos</a>
+      </div>
+      <div class="activity-list" id="apptList">
+        <div class="activity-item" style="justify-content:center;opacity:0.5;padding:1.5rem"><span class="activity-desc">Cargando...</span></div>
+      </div>
+    </div>
+
+    <!-- Quick Access - replaces FAB -->
+    <div class="dash-section">
+      <div class="dash-section-head">
+        <div>
+          <h2 class="dash-section-title">Acceso Rápido</h2>
+          <p class="dash-section-desc">Atajos a las funciones principales</p>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <a href="/gastos" class="quick-card" style="--quick-accent: #0D9488">
+          <div class="quick-icon" style="background: rgba(13,148,136,0.12); color: #0D9488">
+            {% icon "receipt" 22 %}
+          </div>
+          <span class="quick-label">Registrar Gasto</span>
+          <span class="quick-arrow">
+            {% icon "arrow-right" 16 %}
+          </span>
+        </a>
+        <a href="/tratamiento" class="quick-card" style="--quick-accent: #8B5CF6">
+          <div class="quick-icon" style="background: rgba(139,92,246,0.12); color: #8B5CF6">
+            {% icon "clipboard-list" 22 %}
+          </div>
+          <span class="quick-label">Nuevo Tratamiento</span>
+          <span class="quick-arrow">
+            {% icon "arrow-right" 16 %}
+          </span>
+        </a>
+        <a href="/deudas" class="quick-card" style="--quick-accent: #D97706">
+          <div class="quick-icon" style="background: rgba(217,119,6,0.12); color: #D97706">
+            {% icon "credit-card" 22 %}
+          </div>
+          <span class="quick-label">Ver Deudas</span>
+          <span class="quick-arrow">
+            {% icon "arrow-right" 16 %}
+          </span>
+        </a>
+        <a href="/ajustes" class="quick-card" style="--quick-accent: #059669">
+          <div class="quick-icon" style="background: rgba(5,150,105,0.12); color: #059669">
+            {% icon "settings" 22 %}
+          </div>
+          <span class="quick-label">Ajustes</span>
+          <span class="quick-arrow">
+            {% icon "arrow-right" 16 %}
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'vendor/driver.js.iife.js' %}"></script><script type="module" src="{% static 'js/dashboard.js' %}"></script>{% endblock %}

@@ -1,0 +1,54 @@
+<form class="register-form" id="registerForm" novalidate>
+  <div class="name-row">
+    <div class="form-group">
+      <label for="register-first-name" class="form-label">Nombre</label>
+      <input type="text" id="register-first-name" name="firstName" class="form-input" placeholder="Juan" />
+      <p class="error-message" id="reg-firstname-error"></p>
+    </div>
+    <div class="form-group">
+      <label for="register-last-name" class="form-label">Apellido</label>
+      <input type="text" id="register-last-name" name="lastName" class="form-input" placeholder="Pérez" />
+      <p class="error-message" id="reg-lastname-error"></p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="register-clinic" class="form-label">Nombre de tu clínica o consultorio</label>
+    <input type="text" id="register-clinic" name="clinic" class="form-input" placeholder="Clínica Dental Sonrisas" maxlength="150" />
+    <p class="error-message" id="reg-clinic-error"></p>
+  </div>
+
+  <div class="form-group">
+    <label for="register-email" class="form-label">Correo Electrónico</label>
+    <input type="email" id="register-email" name="email" class="form-input" placeholder="tu@email.com" />
+    <p class="error-message" id="reg-email-error"></p>
+  </div>
+
+  <div class="form-group">
+    <label for="register-password" class="form-label">Contraseña</label>
+    <input type="password" id="register-password" name="password" class="form-input" placeholder="••••••••" />
+    <p class="error-message" id="reg-password-error"></p>
+  </div>
+
+  <div class="form-group">
+    <label for="register-confirm-password" class="form-label">Confirmar Contraseña</label>
+    <input type="password" id="register-confirm-password" name="confirmPassword" class="form-input" placeholder="••••••••" />
+    <p class="error-message" id="reg-confirm-error"></p>
+  </div>
+
+  <div class="checkbox-group">
+    <label class="checkbox-container">
+      <input type="checkbox" name="acceptTerms" class="checkbox-input" />
+      <span class="checkbox-custom"></span>
+      <span class="checkbox-label">
+        Acepto los <a href="/terminos" class="terms-link" target="_blank">términos de servicio</a> y <a href="/privacidad" class="terms-link" target="_blank">política de privacidad</a>
+      </span>
+    </label>
+    <p class="error-message" id="reg-terms-error"></p>
+  </div>
+
+  <button type="submit" class="btn-primary w-full" id="register-submit">
+    Crear Cuenta
+  </button>
+
+</form>

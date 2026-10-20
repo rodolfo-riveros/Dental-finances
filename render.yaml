@@ -1,0 +1,32 @@
+# Blueprint de Render para DentFinance (Django). Render > New > Blueprint > este repositorio.
+services:
+  - type: web
+    name: dentfinance
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate --no-input
+    # Un solo worker: el plan Free tiene 512 MB y así el keep-alive corre en un único proceso.
+    startCommand: gunicorn config.wsgi:application --workers 1 --threads 4 --timeout 60
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # PostgreSQL externo (Neon / Supabase). Ver README.md
+      - key: DATABASE_URL
+        sync: false
+      # Comprobantes en Appwrite Storage (el disco de Render Free se borra en cada deploy)
+      - key: APPWRITE_ENDPOINT
+        sync: false
+      - key: APPWRITE_PROJECT_ID
+        sync: false
+      - key: APPWRITE_API_KEY
+        sync: false
+      - key: APPWRITE_BUCKET_ID
+        sync: false
+      # Keep-alive interno: visita /healthz cada 10 minutos
+      - key: KEEPALIVE_ENABLED
+        value: "1"
+      - key: KEEPALIVE_INTERVAL
+        value: "600"

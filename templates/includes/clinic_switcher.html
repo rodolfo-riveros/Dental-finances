@@ -1,0 +1,11 @@
+{% load icons %}<label class="clinic-switcher" title="Clínica activa">
+  <span class="clinic-switcher-dot" style="background: {{ clinic.color }}"></span>
+  <span class="clinic-switcher-text">
+    <span class="clinic-switcher-label">Clínica activa</span>
+    <select class="clinic-switcher-select" data-clinic-switcher aria-label="Cambiar de clínica">
+      {% for c in clinics %}<option value="{{ c.id }}"{% if c.id == clinic.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      <option value="__new__">+ Agregar clínica…</option>
+    </select>
+  </span>
+  {% icon "chevrons-up-down" 14 "clinic-switcher-chevron" %}
+</label>
