@@ -6,6 +6,26 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _load_env_file(path):
+    """Carga KEY=valor desde .env (solo en local; en Render no existe el archivo).
+
+    Las variables ya definidas en el entorno tienen prioridad y los valores vacíos se ignoran.
+    """
+    if not path.exists():
+        return
+    for raw in path.read_text(encoding='utf-8').splitlines():
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        value = value.split(' #', 1)[0].strip().strip('"').strip("'")
+        if value:
+            os.environ.setdefault(key.strip(), value)
+
+
+_load_env_file(BASE_DIR / '.env')
+
 # En Windows el registro a veces asigna text/plain a .js y el navegador
 # rechaza los <script type="module">.
 mimetypes.add_type('text/javascript', '.js', True)
