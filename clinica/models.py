@@ -165,16 +165,3 @@ class Debt(models.Model):
     def __str__(self):
         return f'{self.patient} — S/ {self.amount}'
 
-
-class Heartbeat(models.Model):
-    """Latido del keep-alive: una escritura periódica real en la BD para que nunca quede inactiva."""
-    source = models.CharField(max_length=30, unique=True)
-    last_beat = models.DateTimeField()
-    count = models.PositiveBigIntegerField(default=0)
-
-    class Meta:
-        verbose_name = 'latido keep-alive'
-        verbose_name_plural = 'latidos keep-alive'
-
-    def __str__(self):
-        return f'{self.source}: {self.last_beat:%Y-%m-%d %H:%M}'

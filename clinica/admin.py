@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Clinic, Debt, Expense, Heartbeat, Service, Treatment, TreatmentCost
+from .models import Clinic, Debt, Expense, Service, Treatment, TreatmentCost
 
 
 @admin.register(Clinic)
@@ -43,8 +43,3 @@ class DebtAdmin(admin.ModelAdmin):
     list_filter = ('status', 'source')
     search_fields = ('patient', 'description')
 
-
-@admin.register(Heartbeat)
-class HeartbeatAdmin(admin.ModelAdmin):
-    list_display = ('source', 'last_beat', 'count')
-    readonly_fields = ('source', 'last_beat', 'count')

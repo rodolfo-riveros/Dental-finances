@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _load_env_file(path):
-    """Carga KEY=valor desde .env (solo en local; en Render no existe el archivo).
+    """Carga KEY=valor desde .env (en local y en el VPS).
 
     Las variables ya definidas en el entorno tienen prioridad y los valores vacíos se ignoran.
     """
@@ -31,22 +31,24 @@ _load_env_file(BASE_DIR / '.env')
 mimetypes.add_type('text/javascript', '.js', True)
 mimetypes.add_type('text/css', '.css', True)
 
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-dev-only-cambia-esta-clave-en-produccion',
-)
-ON_RENDER = bool(os.environ.get('RENDER'))
-DEBUG = os.environ.get('DJANGO_DEBUG', '0' if ON_RENDER else '1') == '1'
-if not DEBUG and SECRET_KEY.startswith('django-insecure'):
-    raise RuntimeError('Define DJANGO_SECRET_KEY en producción')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+# Sin DJANGO_SECRET_KEY se asume desarrollo local (DEBUG activo); en el VPS siempre se define.
+DEBUG = os.environ.get('DJANGO_DEBUG', '0' if SECRET_KEY else '1') == '1'
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError('Define DJANGO_SECRET_KEY en producción')
+    SECRET_KEY = 'django-insecure-dev-only-cambia-esta-clave-en-produccion'
 
-ALLOWED_HOSTS = [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]').split(',') if h]
-CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o]
-# Render publica el dominio del servicio en esta variable.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
+
+def _env_list(name, default=''):
+    return [v.strip() for v in os.environ.get(name, default).split(',') if v.strip()]
+
+
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]')
+# Por defecto se confía en https://<cada host> (dominio del VPS detrás de Nginx).
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS') or [
+    f'https://{h.lstrip(".")}' for h in ALLOWED_HOSTS if h not in ('localhost', '127.0.0.1', '[::1]', '*')
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -90,28 +92,47 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Producción: DATABASE_URL (PostgreSQL). Local: SQLite (DJANGO_SQLITE_PATH para usar otro archivo).
-def _database_url():
-    """DATABASE_URL limpio. Una variable vacía (p. ej. creada sin valor en Render) cuenta como no definida.
-
-    También acepta la URL copiada tal cual desde Neon/Supabase (con comillas o el prefijo "psql").
-    """
-    url = os.environ.get('DATABASE_URL', '').strip()
-    if url.startswith('psql '):
-        url = url[5:].strip()
-    url = url.strip('"').strip("'").strip()
-    if url:
-        return url
-    if ON_RENDER:
-        import sys
-        print('ADVERTENCIA: DATABASE_URL no está definida; se usa SQLite y en Render Free '
-              'los datos se borran en cada deploy.', file=sys.stderr)
-    return 'sqlite:///' + Path(os.environ.get('DJANGO_SQLITE_PATH') or BASE_DIR / 'db.sqlite3').as_posix()
-
-
-DATABASES = {
-    'default': dj_database_url.parse(_database_url(), conn_max_age=600, conn_health_checks=True),
+# Producción (VPS): MySQL con DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT o DATABASE_URL
+# (mysql://usuario:clave@host:3306/db). Local sin nada definido: SQLite (DJANGO_SQLITE_PATH para otro archivo).
+MYSQL_OPTIONS = {
+    'charset': 'utf8mb4',
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
 }
+
+
+def _database():
+    if os.environ.get('DB_NAME'):
+        return {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ['DB_NAME'],
+            'USER': os.environ.get('DB_USER', ''),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DB_PORT', '3306'),
+            'OPTIONS': MYSQL_OPTIONS,
+            'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
+        }
+    url = os.environ.get('DATABASE_URL', '').strip().strip('"').strip("'")
+    if url:
+        db = dj_database_url.parse(url, conn_max_age=600, conn_health_checks=True)
+        if db['ENGINE'] == 'django.db.backends.mysql':
+            db['OPTIONS'] = {**MYSQL_OPTIONS, **db.get('OPTIONS', {})}
+        return db
+    path = Path(os.environ.get('DJANGO_SQLITE_PATH') or BASE_DIR / 'db.sqlite3').as_posix()
+    return dj_database_url.parse('sqlite:///' + path)
+
+
+DATABASES = {'default': _database()}
+
+# Argon2 permite iniciar sesión con las contraseñas importadas de Appwrite (importar_appwrite);
+# al entrar, Django las vuelve a guardar con su algoritmo por defecto.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
@@ -126,23 +147,13 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Los comprobantes se sirven siempre por una vista protegida (solo el dueño de la clínica).
+# Los comprobantes se guardan en disco (MEDIA_ROOT) y se sirven siempre por una vista
+# protegida (solo el dueño de la clínica). En el VPS conviene incluir MEDIA_ROOT en los respaldos.
 MEDIA_URL = '/comprobantes/'
 MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT') or BASE_DIR / 'media')
 
-# Comprobantes: si hay credenciales de Appwrite se guardan en su Storage (persistente);
-# si no, en disco local. En Render Free el disco se borra en cada reinicio/deploy.
-APPWRITE_ENDPOINT = os.environ.get('APPWRITE_ENDPOINT', '').rstrip('/')
-APPWRITE_PROJECT_ID = os.environ.get('APPWRITE_PROJECT_ID', '')
-APPWRITE_API_KEY = os.environ.get('APPWRITE_API_KEY', '')
-APPWRITE_BUCKET_ID = os.environ.get('APPWRITE_BUCKET_ID', '')
-USE_APPWRITE_STORAGE = all([APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY, APPWRITE_BUCKET_ID])
-
 STORAGES = {
-    'default': {
-        'BACKEND': 'clinica.storage.AppwriteStorage' if USE_APPWRITE_STORAGE
-        else 'django.core.files.storage.FileSystemStorage',
-    },
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG
         else 'django.contrib.staticfiles.storage.StaticFilesStorage',
@@ -161,22 +172,16 @@ DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'DentFinance <n
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
-# --- Seguridad en producción (Render termina HTTPS en su proxy) ---
+# --- Seguridad en producción (Nginx termina HTTPS y envía X-Forwarded-Proto) ---
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SSL_REDIRECT', '1') == '1'
+    # DJANGO_HTTPS=0 solo mientras el VPS no tenga certificado (p. ej. probando por IP).
+    USE_HTTPS = os.environ.get('DJANGO_HTTPS', '1') == '1'
+    SECURE_SSL_REDIRECT = USE_HTTPS
     SECURE_REDIRECT_EXEMPT = [r'^healthz$']
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = USE_HTTPS
+    CSRF_COOKIE_SECURE = USE_HTTPS
     SECURE_CONTENT_TYPE_NOSNIFF = True
-
-# --- Keep-alive: evita que Render Free / Appwrite Free / la BD se suspendan ---
-# El propio servidor visita KEEPALIVE_URL (por defecto https://<RENDER_EXTERNAL_HOSTNAME>/healthz)
-# cada KEEPALIVE_INTERVAL segundos. Render apaga el servicio tras 15 min sin tráfico.
-KEEPALIVE_ENABLED = os.environ.get('KEEPALIVE_ENABLED', '1' if ON_RENDER else '0') == '1'
-KEEPALIVE_URL = os.environ.get('KEEPALIVE_URL') or (
-    f'https://{RENDER_EXTERNAL_HOSTNAME}/healthz' if RENDER_EXTERNAL_HOSTNAME else '')
-KEEPALIVE_INTERVAL = int(os.environ.get('KEEPALIVE_INTERVAL', '600'))
 
 LOGGING = {
     'version': 1,

@@ -27,56 +27,30 @@ Comandos útiles:
 
 Para probar sin tocar tu base real usa otra BD: `set DJANGO_SQLITE_PATH=%TEMP%\pruebas.sqlite3`.
 
-## Despliegue en Render (Free) 24/7
+## Despliegue en un VPS (Ubuntu/Debian + MySQL)
 
-### 1. Base de datos (PostgreSQL)
+```bash
+git clone <este-repo> ~/dentfinance && cd ~/dentfinance
+sudo bash deploy/instalar_vps.sh midominio.com tu@correo.com
+```
 
-En Render Free el disco **se borra en cada deploy/reinicio**, así que SQLite no sirve en producción.
-Usa un PostgreSQL externo y pon su URL en `DATABASE_URL`:
+El script instala MySQL, crea la base `dentfinance` con su usuario, genera el `.env`
+(clave secreta y contraseña de la BD), instala dependencias, aplica migraciones, crea el
+servicio `dentfinance` (Gunicorn) y el sitio de Nginx, y pide el certificado HTTPS
+(el dominio ya debe apuntar al VPS; sin correo se queda en HTTP).
+Para **actualizar**: `git pull && sudo bash deploy/instalar_vps.sh midominio.com`.
 
-- **Neon** (recomendado): plan gratis sin fecha de expiración; se suspende solo y despierta en la primera consulta.
-- **Supabase**: pausa el proyecto tras 7 días sin actividad → el keep-alive de abajo lo evita.
-- **Render PostgreSQL Free**: ⚠️ la base expira a los 30 días; no la uses para datos reales.
+Los comprobantes se guardan en `media/`: inclúyela en tus respaldos junto con
+`mysqldump dentfinance`. Logs: `journalctl -u dentfinance -f`.
 
-### 2. Comprobantes en Appwrite Storage
+### Migrar los datos de Appwrite
 
-Los comprobantes (fotos/PDF) se guardan en tu bucket de Appwrite para que no se pierdan.
-En Appwrite crea una **API Key** con los permisos `files.read` y `files.write`, y define:
-
-| Variable | Valor |
-|----------|-------|
-| `APPWRITE_ENDPOINT` | ej. `https://cloud.appwrite.io/v1` |
-| `APPWRITE_PROJECT_ID` | id del proyecto |
-| `APPWRITE_API_KEY` | la API key (secreta, nunca en el frontend) |
-| `APPWRITE_BUCKET_ID` | id del bucket |
-
-Los archivos solo se descargan a través de Django (`/comprobantes/...`) y solo para el dueño de la clínica.
-
-### 3. Crear el servicio
-
-Render → **New → Blueprint** → selecciona este repositorio (usa `render.yaml` de la raíz).
-Completa `DATABASE_URL` y las variables de Appwrite. `DJANGO_SECRET_KEY` se genera solo.
-
-### 4. Mantenerlo siempre encendido
-
-Render Free apaga el servicio tras 15 minutos sin tráfico y Appwrite/Supabase pausan proyectos inactivos.
-La app genera **actividad interna permanente aunque nadie la use**:
-
-1. **Hilo interno** (automático en Render, `KEEPALIVE_ENABLED=1`): cada 10 minutos (`KEEPALIVE_INTERVAL=600`)
-   - escribe un latido en la base de datos (tabla `Heartbeat`: UPDATE real, no solo lectura),
-   - consulta Appwrite Storage (actividad en el proyecto de Appwrite),
-   - visita su propia URL pública `/healthz`, que Render cuenta como tráfico y no apaga el servicio.
-2. **`GET /healthz`**: cada visita también escribe un latido en la BD y (máx. cada 10 min) consulta Appwrite.
-3. **GitHub Actions** (`.github/workflows/keepalive.yml`): visita `/healthz` cada 10 min. Agrega el secreto
-   `KEEPALIVE_URL` = `https://<tu-servicio>.onrender.com/healthz`. Si Render reinicia el servicio, esto lo vuelve a despertar.
-4. **Monitor externo** (respaldo recomendado): monitor HTTP gratis en [UptimeRobot](https://uptimerobot.com)
-   o [cron-job.org](https://cron-job.org) a la misma URL cada 5–10 min.
-
-Puedes ver los latidos en `/admin` → *Latidos keep-alive*, o forzar una ronda con
-`python manage.py keepalive`.
-
-Notas: el plan Free de Render da 750 horas/mes, suficiente para **un** servicio encendido todo el mes.
-GitHub desactiva los workflows programados si el repositorio pasa 60 días sin commits.
+1. En Appwrite crea una API key con `databases.read`, `collections.read`, `documents.read`,
+   `files.read` y `users.read`, y ponla en el `.env` junto con `APPWRITE_ENDPOINT`,
+   `APPWRITE_PROJECT_ID`, `APPWRITE_DATABASE_ID` y `APPWRITE_BUCKET_ID`.
+2. `python manage.py exportar_appwrite respaldo_appwrite` → respaldo completo en JSON + archivos.
+3. `python manage.py importar_appwrite respaldo_appwrite --email tu@correo.com --dry-run` (simulación)
+4. Lo mismo sin `--dry-run`. Las cuentas conservan su contraseña (Argon2).
 
 ## Estructura
 
@@ -86,8 +60,9 @@ GitHub desactiva los workflows programados si el repositorio pasa 60 días sin c
 | `clinica/models.py` | Clinic, Service, Expense, Treatment, TreatmentCost, Debt |
 | `clinica/tenancy.py` | Clínica activa del usuario (multi-clínica) |
 | `clinica/api.py` | API JSON (auth, clínicas, servicios, gastos, tratamientos, deudas, resumen) |
-| `clinica/storage.py` | Backend de archivos en Appwrite Storage |
-| `clinica/health.py`, `clinica/keepalive.py` | `/healthz` y auto-ping |
+| `clinica/health.py` | `/healthz` (estado de la app y la BD) |
+| `clinica/management/commands/` | `exportar_appwrite`, `importar_appwrite`, `cargar_servicios` |
+| `deploy/instalar_vps.sh` | Instalación/actualización en el VPS |
 | `templates/`, `static/` | Plantillas, CSS (`responsive.css` = ajustes móviles) y JS |
 
 ## Reglas de negocio de Tratamientos

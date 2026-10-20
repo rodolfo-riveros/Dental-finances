@@ -1,16 +1,18 @@
 import json
 import sys
 import unittest
-from unittest import mock
+import tempfile
+from pathlib import Path
 from datetime import date
 
 import django
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import CommandError, call_command
 from django.test import TestCase, override_settings
 
-from .models import Clinic, Debt, Service, Treatment
+from .models import Clinic, Debt, Expense, Service, Treatment
 from .services_catalog import CATALOG
 
 TOTAL_SERVICES = sum(len(g['services']) for g in CATALOG)
@@ -179,69 +181,98 @@ class VoucherAccessTests(ApiTests):
 
 
 class HealthTests(TestCase):
-    def test_healthz_writes_heartbeat(self):
-        from .models import Heartbeat
-
-        for _ in range(2):
-            resp = self.client.get('/healthz')
-            self.assertEqual(resp.status_code, 200)
-            self.assertEqual(resp.json()['db'], 'ok')
-            self.assertEqual(resp.json()['appwrite'], 'disabled')
-        self.assertEqual(Heartbeat.objects.get(source='healthz').count, 2)
-
-    def test_internal_activity_without_visits(self):
-        from . import keepalive
-        from .models import Heartbeat
-
-        result = keepalive.run_once()
-        self.assertEqual(result['db'], 'ok')
-        self.assertEqual(Heartbeat.objects.get(source='interno').count, 1)
-
-    @override_settings(USE_APPWRITE_STORAGE=True)
-    def test_internal_activity_pings_appwrite(self):
-        from . import keepalive
-
-        with mock.patch('clinica.health.default_storage') as storage:
-            self.assertEqual(keepalive.run_once()['appwrite'], 'ok')
-            storage.ping.assert_called_once()
+    def test_healthz_checks_db(self):
+        resp = self.client.get('/healthz')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), {'app': 'ok', 'db': 'ok'})
 
 
-@override_settings(APPWRITE_ENDPOINT='https://appwrite.test/v1', APPWRITE_PROJECT_ID='proj',
-                   APPWRITE_API_KEY='key', APPWRITE_BUCKET_ID='bucket')
-class AppwriteStorageTests(TestCase):
-    def test_save_open_delete(self):
-        from django.core.files.base import ContentFile
+# Hash real de Argon2 (formato de Appwrite) de la contraseña "clave-appwrite-1".
+APPWRITE_HASH = None
 
-        from .storage import AppwriteStorage
 
-        storage = AppwriteStorage()
-        with mock.patch('clinica.storage.requests') as req:
-            req.post.return_value.status_code = 201
-            name = storage.save('vouchers/1/expense/mi recibo.png', ContentFile(b'abc'))
-            self.assertRegex(name, r'^vouchers/1/expense/[0-9a-f]{32}__mi_recibo\.png$')
-            args, kwargs = req.post.call_args
-            self.assertEqual(args[0], 'https://appwrite.test/v1/storage/buckets/bucket/files')
-            self.assertEqual(kwargs['headers']['X-Appwrite-Key'], 'key')
-            file_id = name.split('/')[-1].split('__')[0]
-            self.assertEqual(kwargs['data']['fileId'], file_id)
+def appwrite_backup(folder):
+    from argon2 import PasswordHasher
 
-            req.get.return_value.content = b'abc'
-            req.get.return_value.headers = {'Content-Type': 'image/png'}
-            self.assertEqual(storage.open(name).read(), b'abc')
-            self.assertTrue(req.get.call_args[0][0].endswith(f'/files/{file_id}/download'))
+    global APPWRITE_HASH
+    APPWRITE_HASH = APPWRITE_HASH or PasswordHasher().hash('clave-appwrite-1')
+    created = '2025-03-10T15:20:00.000+00:00'
+    data = {
+        'users': [{'$id': 'u1', 'email': 'Doc@Appwrite.test', 'name': 'Rosa Quispe Huamán',
+                   'password': APPWRITE_HASH, 'hash': 'argon2'}],
+        'clinics': [{'$id': 'c1', 'name': 'Dental Rosa', 'email': 'rosa@clinica.test', '$createdAt': created}],
+        'services': [{'$id': 's1', 'title': 'Blanqueamiento', 'desc': 'LED', 'price': 450,
+                      'category': 'Clínica', 'color': '#123456'}],
+        'expenses': [{'$id': 'e1', 'description': 'Luz', 'category': 'Servicios', 'amount': 85.5,
+                      'date': '2025-03-01', 'voucher': 'f1', '$createdAt': created}],
+        'treatments': [{'$id': 't1', 'patient': 'Juan', 'type': 'Corona', 'source': 'Externo',
+                        'date': '2025-03-05T00:00:00.000+00:00', 'total': 800, 'paid': 900, 'balance': 0,
+                        'costLab': 200, 'costTech': 0, 'costOther': 15, '$createdAt': created},
+                       {'$id': 't2', 'patient': 'Ana', 'type': 'Resina', 'source': 'Clínica',
+                        'date': '2025-03-06', 'total': 300, 'paid': 100, '$createdAt': created}],
+        'debts': [{'$id': 'd1', 'patient': 'Luis', 'description': 'Ortodoncia', 'amount': 1200,
+                   'dueDate': '2025-04-01', 'source': 'Clínica', 'status': 'Pagado', '$createdAt': created}],
+        'files': [{'$id': 'f1', 'name': 'recibo luz.png'}],
+    }
+    for name, docs in data.items():
+        (folder / f'{name}.json').write_text(json.dumps(docs), encoding='utf-8')
+    (folder / 'archivos').mkdir()
+    (folder / 'archivos' / 'f1').write_bytes(b'png-bytes')
 
-            req.delete.return_value.status_code = 204
-            storage.delete(name)
-            self.assertTrue(req.delete.call_args[0][0].endswith(f'/files/{file_id}'))
 
-    def test_large_file_uploaded_in_chunks(self):
-        from django.core.files.base import ContentFile
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class ImportAppwriteTests(TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.folder = Path(tmp.name)
+        appwrite_backup(self.folder)
 
-        from .storage import CHUNK_SIZE, AppwriteStorage
+    def run_import(self, *extra):
+        call_command('importar_appwrite', str(self.folder), '--email', 'doc@appwrite.test', *extra,
+                     stdout=open(Path(tempfile.gettempdir()) / 'importar.log', 'w', encoding='utf-8'))
 
-        with mock.patch('clinica.storage.requests') as req:
-            AppwriteStorage().save('vouchers/1/debt/a.pdf', ContentFile(b'x' * (CHUNK_SIZE + 10)))
-            self.assertEqual(req.post.call_count, 2)
-            second = req.post.call_args_list[1][1]['headers']
-            self.assertEqual(second['Content-Range'], f'bytes {CHUNK_SIZE}-{CHUNK_SIZE + 9}/{CHUNK_SIZE + 10}')
-            self.assertIn('X-Appwrite-ID', second)
+    def test_imports_everything(self):
+        self.run_import()
+        user = get_user_model().objects.get(email='doc@appwrite.test')
+        self.assertEqual((user.first_name, user.last_name), ('Rosa', 'Quispe Huamán'))
+        self.assertTrue(self.client.login(username='doc@appwrite.test', password='clave-appwrite-1'))
+        user.refresh_from_db()
+        self.assertTrue(user.password.startswith('pbkdf2_sha256$'))  # se re-guarda al iniciar sesión
+
+        clinic = Clinic.objects.get(owner=user)
+        self.assertEqual((clinic.name, clinic.email), ('Dental Rosa', 'rosa@clinica.test'))
+        self.assertEqual(Service.objects.filter(clinic=clinic).count(), TOTAL_SERVICES + 1)
+
+        expense = Expense.objects.get(clinic=clinic)
+        self.assertEqual((str(expense.amount), expense.date), ('85.50', date(2025, 3, 1)))
+        self.assertEqual(expense.created_at.year, 2025)
+        self.assertRegex(expense.voucher.name, rf'^vouchers/{clinic.id}/expense/recibo_luz.*\.png$')
+        self.assertEqual(b''.join(self.client.get(expense.voucher.url).streaming_content), b'png-bytes')
+
+        corona = Treatment.objects.get(patient='Juan')
+        self.assertEqual((corona.source, corona.date, corona.paid), ('Externo', date(2025, 3, 5), corona.total))
+        self.assertEqual(sorted((c.concept, int(c.amount)) for c in corona.costs.all()),
+                         [('Laboratorio', 200), ('Otros', 15)])
+        debt = Debt.objects.get(clinic=clinic)
+        self.assertEqual((debt.patient, debt.status, debt.treatment), ('Luis', 'Pagado', None))
+
+    def test_reuses_empty_registered_clinic_and_refuses_reimport(self):
+        self.client.post('/api/auth/register', json.dumps({
+            'firstName': 'Rosa', 'lastName': 'Q', 'email': 'doc@appwrite.test', 'password': 'clave-nueva-1',
+        }), content_type='application/json')
+        self.run_import('--deudas-de-saldos')
+        user = get_user_model().objects.get(email='doc@appwrite.test')
+        self.assertEqual(Clinic.objects.filter(owner=user).count(), 1)
+        self.assertTrue(user.check_password('clave-nueva-1'))  # una cuenta existente no se toca
+        self.assertEqual(Debt.objects.get(treatment__patient='Ana').amount, 200)
+        with self.assertRaises(CommandError):
+            self.run_import()
+
+    def test_dry_run_saves_nothing(self):
+        self.run_import('--dry-run')
+        self.assertFalse(get_user_model().objects.exists())
+        self.assertFalse(Clinic.objects.exists())
