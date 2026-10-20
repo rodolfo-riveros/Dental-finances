@@ -91,12 +91,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Producción: DATABASE_URL (PostgreSQL). Local: SQLite (DJANGO_SQLITE_PATH para usar otro archivo).
+def _database_url():
+    """DATABASE_URL limpio. Una variable vacía (p. ej. creada sin valor en Render) cuenta como no definida.
+
+    También acepta la URL copiada tal cual desde Neon/Supabase (con comillas o el prefijo "psql").
+    """
+    url = os.environ.get('DATABASE_URL', '').strip()
+    if url.startswith('psql '):
+        url = url[5:].strip()
+    url = url.strip('"').strip("'").strip()
+    if url:
+        return url
+    if ON_RENDER:
+        import sys
+        print('ADVERTENCIA: DATABASE_URL no está definida; se usa SQLite y en Render Free '
+              'los datos se borran en cada deploy.', file=sys.stderr)
+    return 'sqlite:///' + Path(os.environ.get('DJANGO_SQLITE_PATH') or BASE_DIR / 'db.sqlite3').as_posix()
+
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + Path(os.environ.get('DJANGO_SQLITE_PATH') or BASE_DIR / 'db.sqlite3').as_posix(),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    'default': dj_database_url.parse(_database_url(), conn_max_age=600, conn_health_checks=True),
 }
 
 AUTH_PASSWORD_VALIDATORS = [
